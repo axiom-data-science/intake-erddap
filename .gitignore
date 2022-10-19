@@ -133,3 +133,6 @@ dmypy.json
 
 # Generated dynamically
 intake_erddap/_version.py
+
+# vscode
+.vscode

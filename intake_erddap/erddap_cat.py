@@ -1,3 +1,4 @@
+"""Catalog implementation for intake-erddap."""
 from erddapy import ERDDAP
 from intake.catalog.base import Catalog
 from intake.catalog.local import LocalCatalogEntry
