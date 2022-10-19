@@ -1,3 +1,4 @@
+"""Project version module."""
 from pkg_resources import DistributionNotFound, get_distribution
 
 

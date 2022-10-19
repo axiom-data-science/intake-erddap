@@ -7,3 +7,5 @@ dependencies:
   - isort
   - flake8
   - pre-commit
+  - types-setuptools
+  - mypy

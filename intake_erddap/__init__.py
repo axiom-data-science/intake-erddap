@@ -1,14 +1,11 @@
-from pkg_resources import DistributionNotFound, get_distribution
-
-from .erddap import ERDDAPSource, ERDDAPSourceAutoPartition, ERDDAPSourceManualPartition
+"""intake-erddap package."""
+from .erddap import ERDDAPSource
 from .erddap_cat import ERDDAPCatalog
 from .version import __version__
 
 
 __all__ = [
     "ERDDAPSource",
-    "ERDDAPSourceAutoPartition",
-    "ERDDAPSourceManualPartition",
     "ERDDAPCatalog",
     "__version__",
 ]
