@@ -24,8 +24,6 @@ setup(
         "intake.drivers": [
             "erddap = intake_erddap.intake_erddap:ERDDAPSource",
             "erddap_cat = intake_erddap.erddap_cat:ERDDAPCatalog",
-            "erddap_auto = intake_erddap.intake_erddap:ERDDAPSourceAutoPartition",
-            "erddap_manual = intake_erddap.intake_erddap:ERDDAPSourceManualPartition",
         ]
     },
     include_package_data=True,
