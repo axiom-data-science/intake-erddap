@@ -16,8 +16,9 @@ class ERDDAPCatalog(Catalog):
     name = 'erddap_cat'
     version = __version__
 
-    def __init__(self, server, **kwargs):
+    def __init__(self, server, kwargs_search=None, **kwargs):
         self.server = server
+        self.kwargs_search = kwargs_search
         super(ERDDAPCatalog, self).__init__(**kwargs)
 
     def _load(self):
@@ -27,13 +28,26 @@ class ERDDAPCatalog(Catalog):
         e = ERDDAP(self.server)
         e.protocol = 'tabledap'
         e.dataset_id = 'allDatasets'
-        
-        df = e.to_pandas()
+
+        if self.kwargs_search is not None:
+            search_url = e.get_search_url(
+                response="csv",
+                **self.kwargs_search,
+                # variableName=variable,
+                items_per_page=100000,
+            )
+            import pandas as pd
+            df = pd.read_csv(search_url)
+            dataidkey = 'Dataset ID'
+
+        else:
+            df = e.to_pandas()
+            dataidkey = 'datasetID'
 
         self._entries = {}
 
         for index, row in df.iterrows():
-            dataset_id = row['datasetID']
+            dataset_id = row[dataidkey]
             if dataset_id == 'allDatasets':
                 continue
 
@@ -44,14 +58,16 @@ class ERDDAPCatalog(Catalog):
                     }
 
             if False: # if we can use AutoPartition
-                e = LocalCatalogEntry(dataset_id, description, 'erddap_auto', True,
+                entry = LocalCatalogEntry(dataset_id, description, 'erddap_auto', True,
                                         args, {}, {}, {}, "", getenv=False,
                                         getshell=False)
-                e._plugin = [ERDDAPSourceAutoPartition]
+                entry._metadata = {'info_url': e.get_info_url(response="csv", dataset_id=dataset_id)}
+                entry._plugin = [ERDDAPSourceAutoPartition]
             else: # if we can't use AutoPartition
-                e = LocalCatalogEntry(dataset_id, description, 'erddap', True,
+                entry = LocalCatalogEntry(dataset_id, description, 'erddap', True,
                                       args, {}, {}, {}, "", getenv=False,
                                       getshell=False)
-                e._plugin = [ERDDAPSource]
+                entry._metadata = {'info_url': e.get_info_url(response="csv", dataset_id=dataset_id)}
+                entry._plugin = [ERDDAPSource]
             
-            self._entries[dataset_id] = e
+            self._entries[dataset_id] = entry
