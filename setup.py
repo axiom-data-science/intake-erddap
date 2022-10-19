@@ -11,8 +11,8 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     description='ERDDAP plugin for Intake',
     url='https://github.com/jmunroe/intake-erddap',
-    maintainer='James Munroe',
-    maintainer_email='jmunroe@mun.ca',
+    maintainer='Axiom Data Science',
+    maintainer_email='dev@axds.co',
     license='BSD',
     py_modules=['intake_erddap'],
     packages=['intake_erddap'],
@@ -27,6 +27,6 @@ setup(
     },
     include_package_data=True,
     install_requires=requires,
-    long_description=open('README.rst').read(),
+    long_description=open('README.md').read(),
     zip_safe=False,
 )
