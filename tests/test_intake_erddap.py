@@ -1,21 +1,20 @@
 import intake
+import pytest
 from intake_erddap import (ERDDAPSourceAutoPartition, 
                            ERDDAPSourceManualPartition,
                            ERDDAPSource)
 from .utils import df, df2
 import pandas as pd
 
-# pytest imports this package last, so plugin is not auto-added
-intake.registry['erddap'] = ERDDAPSource
-intake.registry['erddap_auto'] = ERDDAPSourceAutoPartition
-intake.registry['erddap_manual'] = ERDDAPSourceManualPartition
+
+def intake_init():
+    # pytest imports this package last, so plugin is not auto-added
+    intake.registry['erddap'] = ERDDAPSource
+    intake.registry['erddap_auto'] = ERDDAPSourceAutoPartition
+    intake.registry['erddap_manual'] = ERDDAPSourceManualPartition
 
 
-def test_fixture():
-    # how to "fake" an ERDDAP server for testing purposes?
-    assert False
-    
-
+@pytest.mark.skip(reason="Legacy tests")
 def test_simple():
     server = 'https://cioosatlantic.ca/erddap'
     dataset_id = 'SMA_bay_of_exploits'
@@ -26,6 +25,7 @@ def test_simple():
     assert len(d2) > 0
 
 
+@pytest.mark.skip(reason="Legacy tests")
 def test_auto():
     server = 'https://cioosatlantic.ca/erddap'
     dataset_id = 'SMA_bay_of_exploits'
@@ -42,6 +42,7 @@ def test_auto():
     assert df.equals(d2)
 
 
+@pytest.mark.skip(reason="Legacy tests")
 def test_manual():
     assert False
 

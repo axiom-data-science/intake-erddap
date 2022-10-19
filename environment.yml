@@ -1,0 +1,9 @@
+name: intake-erddap
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - pandas
+  - erddapy
+  - panel
+  - intake
