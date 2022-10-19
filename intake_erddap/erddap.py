@@ -53,7 +53,7 @@ class ERDDAPSource(base.DataSource):
         e.protocol = self._protocol
         e.dataset_id = self._dataset_id
         e.variables = self._variables
-        e.constrants = self._constraints
+        e.constraints = self._constraints
 
         self._dataframe = e.to_pandas()
         
