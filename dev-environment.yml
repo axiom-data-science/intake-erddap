@@ -1,0 +1,9 @@
+name: intake-erddap
+channels:
+  - conda-forge
+dependencies:
+  - pytest
+  - pytest-cov
+  - isort
+  - flake8
+  - pre-commit
