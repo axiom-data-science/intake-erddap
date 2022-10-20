@@ -61,25 +61,6 @@ class ERDDAPCatalog(Catalog):
                 "protocol": "tabledap",
             }
 
-            # if False:  # if we can use AutoPartition
-            #     entry = LocalCatalogEntry(
-            #         dataset_id,
-            #         description,
-            #         "erddap_auto",
-            #         True,
-            #         args,
-            #         {},
-            #         {},
-            #         {},
-            #         "",
-            #         getenv=False,
-            #         getshell=False,
-            #     )
-            #     entry._metadata = {
-            #         "info_url": e.get_info_url(response="csv", dataset_id=dataset_id)
-            #     }
-            #     entry._plugin = [ERDDAPSourceAutoPartition]
-            # else:  # if we can't use AutoPartition
             entry = LocalCatalogEntry(
                 dataset_id,
                 description,
