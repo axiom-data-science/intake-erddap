@@ -1,8 +1,13 @@
 """Catalog implementation for intake-erddap."""
+from typing import Optional, Type
+
+import pandas as pd
+
 from erddapy import ERDDAP
 from intake.catalog.base import Catalog
 from intake.catalog.local import LocalCatalogEntry
 
+from .erddap import ERDDAPSource
 from .version import __version__
 
 
@@ -18,19 +23,27 @@ class ERDDAPCatalog(Catalog):
     name = "erddap_cat"
     version = __version__
 
-    def __init__(self, server, kwargs_search=None, **kwargs):
+    def __init__(
+        self,
+        server: str,
+        kwargs_search: Optional[dict] = None,
+        erddap_client: Optional[Type[ERDDAP]] = None,
+        **kwargs
+    ):
+        """ERDDAPCatalog initialization
+
+        Arguments
+        ---------
+
+            server
+        """
+        self._erddap_client = erddap_client or ERDDAP
         self.server = server
         self.kwargs_search = kwargs_search
         super(ERDDAPCatalog, self).__init__(**kwargs)
 
-    def _load(self):
-
-        from .erddap import ERDDAPSource  # , ERDDAPSourceAutoPartition
-
-        e = ERDDAP(self.server)
-        e.protocol = "tabledap"
-        e.dataset_id = "allDatasets"
-
+    def _load_df(self):
+        e = self.get_client()
         if self.kwargs_search is not None:
             search_url = e.get_search_url(
                 response="csv",
@@ -38,14 +51,23 @@ class ERDDAPCatalog(Catalog):
                 # variableName=variable,
                 items_per_page=100000,
             )
-            import pandas as pd
-
             df = pd.read_csv(search_url)
-            dataidkey = "Dataset ID"
+            df.rename(columns={"Dataset ID": "datasetID"}, inplace=True)
+            return df
 
-        else:
-            df = e.to_pandas()
-            dataidkey = "datasetID"
+        return e.to_pandas()
+
+    def get_client(self) -> ERDDAP:
+        """Return an initialized ERDDAP Client."""
+        e = self._erddap_client(self.server)
+        e.protocol = "tabledap"
+        e.dataset_id = "allDatasets"
+        return e
+
+    def _load(self):
+        dataidkey = "datasetID"
+        e = self.get_client()
+        df = self._load_df()
 
         self._entries = {}
 
