@@ -1,0 +1,16 @@
+name: test-env-win
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pandas
+  - erddapy
+  - panel
+  - intake
+  - pytest
+  - pytest-cov
+  - isort
+  - flake8
+  - pre-commit
+  - types-setuptools
+  - mypy
