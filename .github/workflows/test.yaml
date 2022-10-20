@@ -13,59 +13,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Crawl, walk, run, sprint
-        #os: ["macos-latest", "ubuntu-latest", "windows-latest"]
-        #python-version: ["3.7", "3.8", "3.9"]
-        os: ["ubuntu-latest"]
-        python-version: ["3.9"]
+        os: ["macos-latest", "ubuntu-latest", "windows-latest"]
+        python-version: ["3.8", "3.9", "3.10"]
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: Cache Linux/macOS (x86) Conda environment
-        if: ${{ runner.os != 'Windows' }}
+      - uses: actions/checkout@v2
+      - name: Cache conda
         uses: actions/cache@v1
         env:
           # Increase this value to reset cache if ci/environment.yml has not changed
           CACHE_NUMBER: 0
         with:
           path: ~/conda_pkgs_dir
-          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('ci/environment-py${{ matrix.python-version }}.yml') }}
-
-      - name: Cache Windows Conda environment
-        if: ${{ runner.os == 'Windows' }}
-        uses: actions/cache@v1
-        env:
-          # Increase this value to reset cache if ci/environment.yml has not changed
-          CACHE_NUMBER: 0
-        with:
-          path: ~/conda_pkgs_dir
-          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('ci/environment-py${{ matrix.python-version }}-win.yml') }}
-
-      - name: Build and activate Linux/macOS Conda environment
-        if: ${{ runner.os != 'Windows' }}
-        uses: conda-incubator/setup-miniconda@v2
+          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ matrix.python-version}}-${{ hashFiles('ci/environment-py${{ matrix.python-version }}.yml') }}
+      - uses: conda-incubator/setup-miniconda@v2
         with:
           mamba-version: "*" # activate this to build with mamba.
           channels: conda-forge, defaults # These need to be specified to use mamba
           channel-priority: true
           environment-file: ci/environment-py${{ matrix.python-version }}.yml
 
-          activate-environment: test-env-mac-unix
-          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
-
-      - name: Build and activate Windows Conda environment
-        if: ${{ runner.os == 'Windows' }}
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          mamba-version: "*" # activate this to build with mamba.
-          channels: conda-forge, defaults # These need to be specified to use mamba
-          channel-priority: true
-          environment-file: ci/environment-py${{ matrix.python-version }}-win.yml
-
-          activate-environment: test-env-win
+          activate-environment: test-env
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
       - name: Install package in environment
