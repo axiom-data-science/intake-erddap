@@ -25,7 +25,7 @@ class ERDDAPCatalog(Catalog):
 
     def _load(self):
 
-        from intake_erddap import ERDDAPSource, ERDDAPSourceAutoPartition
+        from .erddap import ERDDAPSource#, ERDDAPSourceAutoPartition
 
         e = ERDDAP(self.server)
         e.protocol = "tabledap"
