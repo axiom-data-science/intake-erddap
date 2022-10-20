@@ -3,10 +3,10 @@ _forked from [https://github.com/jmunroe/intake-erddap](https://github.com/jmunr
 Intake-ERDDAP
 =============
 
-[![Build Status](https://img.shields.io/github/workflow/status/axiom-data-science/extract_model/Tests?logo=github&style=for-the-badge)](https://github.com/axiom-data-science/extract_model/actions)
-[![Code Coverage](https://img.shields.io/codecov/c/github/axiom-data-science/extract_model.svg?style=for-the-badge)](https://codecov.io/gh/axiom-data-science/extract_model)
+[![Build Status](https://img.shields.io/github/workflow/status/axiom-data-science/intake-erddap/Tests?logo=github&style=for-the-badge)](https://github.com/axiom-data-science/intake-erddap/actions)
+[![Code Coverage](https://img.shields.io/codecov/c/github/axiom-data-science/intake-erddap.svg?style=for-the-badge)](https://codecov.io/gh/axiom-data-science/intake-erddap)
 [![License:BSD](https://img.shields.io/badge/License-BSD-green.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Code Style Status](https://img.shields.io/github/workflow/status/axiom-data-science/extract_model/linting%20with%20pre-commit?label=Code%20Style&style=for-the-badge)](https://github.com/axiom-data-science/extract_model/actions)
+[![Code Style Status](https://img.shields.io/github/workflow/status/axiom-data-science/intake-erddap/linting%20with%20pre-commit?label=Code%20Style&style=for-the-badge)](https://github.com/axiom-data-science/intake-erddap/actions)
 
 
 
