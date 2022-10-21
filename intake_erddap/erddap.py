@@ -1,5 +1,5 @@
 """Source implementations for intake-erddap."""
-from typing import List, Optional
+from typing import List, Optional, Type
 
 import pandas as pd
 
@@ -40,10 +40,12 @@ class ERDDAPSource(base.DataSource):
         protocol: str = "tabledap",
         variables: List[str] = None,
         constraints: dict = None,
-        metadata={},
+        metadata: dict = None,
+        erddap_client: Optional[Type[ERDDAP]] = None,
     ):
         variables = variables or []
         constraints = constraints or {}
+        metadata = metadata or {}
 
         self._init_args = {
             "server": server,
@@ -60,17 +62,21 @@ class ERDDAPSource(base.DataSource):
         self._variables = variables
         self._constraints = constraints
         self._dataframe: Optional[pd.DataFrame] = None
+        self._erddap_client = erddap_client or ERDDAP
 
         super(ERDDAPSource, self).__init__(metadata=metadata)
 
-    def _load(self):
-
-        e = ERDDAP(server=self._server)
+    def get_client(self) -> ERDDAP:
+        """Return an initialized ERDDAP Client."""
+        e = self._erddap_client(server=self._server)
         e.protocol = self._protocol
         e.dataset_id = self._dataset_id
         e.variables = self._variables
         e.constraints = self._constraints
+        return e
 
+    def _load(self):
+        e = self.get_client()
         self._dataframe: pd.DataFrame = e.to_pandas()
 
     def _get_schema(self) -> base.Schema:
