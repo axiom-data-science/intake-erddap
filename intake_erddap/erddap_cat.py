@@ -35,7 +35,6 @@ class ERDDAPCatalog(Catalog):
         server: str,
         kwargs_search: Optional[Dict[str, Union[str, int, float]]] = None,
         category_search: Optional[List[str]] = None,
-        # category_search: Optional[Dict[str, str]] = None,
         erddap_client: Optional[Type[ERDDAP]] = None,
         **kwargs,
     ):
