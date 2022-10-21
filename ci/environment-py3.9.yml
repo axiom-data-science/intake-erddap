@@ -16,3 +16,6 @@ dependencies:
   - mypy
   - codecov
   - coverage[toml]
+  - pip
+  - pip:
+    - git@github.com:axiom-data-science/cf-pandas.git
