@@ -19,4 +19,3 @@ dependencies:
   - pip
   - pip:
     - git@github.com:axiom-data-science/cf-pandas.git
-
