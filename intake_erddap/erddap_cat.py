@@ -1,6 +1,6 @@
 """Catalog implementation for intake-erddap."""
 
-from typing import Dict, List, Optional, Type, Union
+from typing import Dict, List, Optional, Tuple, Type, Union
 
 import pandas as pd
 
@@ -34,7 +34,7 @@ class ERDDAPCatalog(Catalog):
         self,
         server: str,
         kwargs_search: Optional[Dict[str, Union[str, int, float]]] = None,
-        category_search: Optional[List[str]] = None,
+        category_search: Optional[Tuple[str]] = None,
         erddap_client: Optional[Type[ERDDAP]] = None,
         **kwargs,
     ):
@@ -50,7 +50,7 @@ class ERDDAPCatalog(Catalog):
               Longitudes must be between -180 to +180.
             * to search within a datetime range: include both of min_time, max_time: interpretable
               datetime string, e.g., "2021-1-1"
-        category_search : list, optional
+        category_search : list, tuple, optional
             Use this to narrow search by ERDDAP category. The syntax is `[category, key]`, e.g.
             ["standard_name": "temp"]. `category` is the ERDDAP category for filtering results. Good
             choices for selecting variables are "standard_name" and "variableName". `key` is the
