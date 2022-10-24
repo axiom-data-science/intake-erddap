@@ -22,7 +22,7 @@ def get_project_version() -> str:
 
 def return_category_options(
     server: str,
-    category: Optional[str] = "standard_name",
+    category: str = "standard_name",
 ) -> DataFrame:
     """Find category options for ERDDAP server.
 
