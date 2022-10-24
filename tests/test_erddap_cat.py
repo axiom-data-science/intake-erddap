@@ -2,11 +2,13 @@
 """Unit tests."""
 from unittest import mock
 
+import cf_pandas
 import intake
 import pandas as pd
 import pytest
 
 from intake_erddap.erddap_cat import ERDDAPCatalog
+import intake_erddap
 
 
 def test_nothing():
@@ -42,6 +44,35 @@ def test_erddap_catalog_searching(mock_read_csv):
     assert list(cat) == ["abc123"]
 
 
+@mock.patch("pandas.read_csv")
+def test_erddap_catalog_searching(mock_read_csv):
+    df1 = pd.DataFrame()
+    df1["Category"] = ["sea_water_temperature"]
+    df1["URL"] = ["http://blah.com"]
+    df2 = pd.DataFrame()
+    df2["Dataset ID"] = ["testID"]
+    # pd.read_csv is called twice, so two return results
+    mock_read_csv.side_effect = [df1, df2]
+    criteria = {
+        "temp": {
+            "standard_name": "sea_water_temperature$",
+        },
+    }
+    cf_pandas.set_options(custom_criteria=criteria)
+    kw = {
+        "min_lon": -180,
+        "max_lon": -156,
+        "min_lat": 50,
+        "max_lat": 66,
+        "min_time": "2021-4-1",
+        "max_time": "2021-4-2",
+    }
+    server = "http://erddap.invalid/erddap"
+    cat = ERDDAPCatalog(server=server, kwargs_search=kw, category_search=("standard_name", "temp"))
+    assert "standard_name" in cat.kwargs_search
+    assert cat.kwargs_search["standard_name"] == "sea_water_temperature"
+
+
 @pytest.mark.integration
 def test_ioos_erddap_catalog_and_source():
     kw = {
@@ -58,3 +89,28 @@ def test_ioos_erddap_catalog_and_source():
     assert df is not None
     assert isinstance(df, pd.DataFrame)
     assert len(df) > 0
+
+
+def test_invalid_kwarg_search():
+    kw = {
+        "min_lon": -180,
+        "max_lon": -156,
+        "max_lat": 66,
+        "min_time": "2021-4-1",
+        "max_time": "2021-4-2",
+    }
+    server = "http://erddap.sensors.ioos.us/erddap"
+
+    with pytest.raises(ValueError):
+        intake.open_erddap_cat(server, kwargs_search=kw)
+
+    kw = {
+        "min_lon": -180,
+        "max_lon": -156,
+        "min_lat": 50,
+        "max_lat": 66,
+        "max_time": "2021-4-2",
+    }
+
+    with pytest.raises(ValueError):
+        intake.open_erddap_cat(server, kwargs_search=kw)
