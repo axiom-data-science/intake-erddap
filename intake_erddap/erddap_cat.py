@@ -1,6 +1,6 @@
 """Catalog implementation for intake-erddap."""
 
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Dict, Optional, Tuple, Type, Union
 
 import pandas as pd
 
