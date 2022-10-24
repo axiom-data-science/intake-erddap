@@ -8,7 +8,6 @@ import pandas as pd
 import pytest
 
 from intake_erddap.erddap_cat import ERDDAPCatalog
-import intake_erddap
 
 
 def test_nothing():
@@ -45,7 +44,7 @@ def test_erddap_catalog_searching(mock_read_csv):
 
 
 @mock.patch("pandas.read_csv")
-def test_erddap_catalog_searching(mock_read_csv):
+def test_erddap_catalog_searching_variable(mock_read_csv):
     df1 = pd.DataFrame()
     df1["Category"] = ["sea_water_temperature"]
     df1["URL"] = ["http://blah.com"]
@@ -68,7 +67,9 @@ def test_erddap_catalog_searching(mock_read_csv):
         "max_time": "2021-4-2",
     }
     server = "http://erddap.invalid/erddap"
-    cat = ERDDAPCatalog(server=server, kwargs_search=kw, category_search=("standard_name", "temp"))
+    cat = ERDDAPCatalog(
+        server=server, kwargs_search=kw, category_search=("standard_name", "temp")
+    )
     assert "standard_name" in cat.kwargs_search
     assert cat.kwargs_search["standard_name"] == "sea_water_temperature"
 
