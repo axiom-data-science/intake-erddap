@@ -33,7 +33,7 @@ class ERDDAPCatalog(Catalog):
     def __init__(
         self,
         server: str,
-        kwargs_search: Optional[Dict[str, Union[str, int, float]]] = None,
+        kwargs_search: Dict[str, Union[str, int, float]] = None,
         category_search: Optional[Tuple[str, str]] = None,
         erddap_client: Optional[Type[ERDDAP]] = None,
         **kwargs,
@@ -89,7 +89,7 @@ class ERDDAPCatalog(Catalog):
 
     def _load_df(self):
         e = self.get_client()
-        if self.kwargs_search is not None:
+        if len(self.kwargs_search) > 0:
             search_url = e.get_search_url(
                 response="csv",
                 **self.kwargs_search,
