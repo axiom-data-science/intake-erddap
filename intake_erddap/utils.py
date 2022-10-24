@@ -29,7 +29,7 @@ def return_category_options(
     Parameters
     ----------
     server : str
-        ERDDAP server address, for example: "http://erddap.sensors.ioos.us/erddap"
+        ERDDAP server address, for example: "https://erddap.sensors.ioos.us/erddap"
     category : str, optional
         ERDDAP category for filtering results. Default is "standard_name" but another good option is
         "variableName".
@@ -51,7 +51,7 @@ def return_category_options(
 def match_key_to_category(
     server: str,
     key: str,
-    category: Optional[str] = "standard_name",
+    category: str = "standard_name",
     criteria: Optional[dict] = None,
 ) -> list:
     """Find category values for server and return match to key.

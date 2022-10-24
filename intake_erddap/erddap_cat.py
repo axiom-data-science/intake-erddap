@@ -34,7 +34,7 @@ class ERDDAPCatalog(Catalog):
         self,
         server: str,
         kwargs_search: Optional[Dict[str, Union[str, int, float]]] = None,
-        category_search: Optional[Tuple[str]] = None,
+        category_search: Optional[Tuple[str, str]] = None,
         erddap_client: Optional[Type[ERDDAP]] = None,
         **kwargs,
     ):
@@ -51,8 +51,8 @@ class ERDDAPCatalog(Catalog):
             * to search within a datetime range: include both of min_time, max_time: interpretable
               datetime string, e.g., "2021-1-1"
         category_search : list, tuple, optional
-            Use this to narrow search by ERDDAP category. The syntax is `[category, key]`, e.g.
-            ["standard_name": "temp"]. `category` is the ERDDAP category for filtering results. Good
+            Use this to narrow search by ERDDAP category. The syntax is `(category, key)`, e.g.
+            ("standard_name", "temp"). `category` is the ERDDAP category for filtering results. Good
             choices for selecting variables are "standard_name" and "variableName". `key` is the
             custom_criteria key to narrow the search by, which will be matched to the category results
             using the custom_criteria that must be set up or input by the user, with `cf-pandas`.
@@ -71,7 +71,7 @@ class ERDDAPCatalog(Catalog):
                 if any(key in kwargs_search for key in check) and not all(
                     key in kwargs_search for key in check
                 ):
-                    raise KeyError(
+                    raise ValueError(
                         f"If any of {check} are input, they all must be input."
                     )
         else:
