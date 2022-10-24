@@ -7,3 +7,6 @@ dependencies:
   - erddapy
   - panel
   - intake
+  - pip
+  - pip:
+    - cf-pandas

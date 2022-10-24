@@ -16,3 +16,6 @@ dependencies:
   - mypy
   - codecov
   - coverage[toml]
+  - pip
+  - pip:
+    - cf-pandas
