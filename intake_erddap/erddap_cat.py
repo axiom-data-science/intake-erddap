@@ -148,7 +148,6 @@ class ERDDAPCatalog(Catalog):
             )
             entry._metadata = {
                 "info_url": e.get_info_url(response="csv", dataset_id=dataset_id),
-                "extras": "blahblah",
             }
             entry._plugin = [ERDDAPSource]
 
