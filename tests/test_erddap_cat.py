@@ -1,6 +1,7 @@
 #!/usr/bin/env pytest
 """Unit tests."""
 from unittest import mock
+from urllib.parse import parse_qsl, urlparse
 
 import cf_pandas
 import intake
@@ -140,3 +141,29 @@ def test_catalog_skips_all_datasets_row(mock_to_pandas):
     server = "http://erddap.invalid/erddap"
     cat = ERDDAPCatalog(server=server)
     assert list(cat) == ["abc123"]
+
+
+@mock.patch("pandas.read_csv")
+def test_params_search(mock_read_csv):
+    df = pd.DataFrame()
+    df["datasetID"] = ["allDatasets", "abc123"]
+    mock_read_csv.return_value = df
+    erddap_url = "https://erddap.invalid/erddap"
+    search = search = {
+        "min_lon": -100,
+        "max_lon": -54,
+        "min_lat": 19,
+        "max_lat": 55,
+        "min_time": "2022-01-01",
+        "max_time": "2022-11-07",
+        "standard_name": "sea_water_temperature",
+    }
+    cat = ERDDAPCatalog(server=erddap_url, kwargs_search=search)
+    search_url = cat.get_search_url()
+    assert search_url is not None
+    parts = urlparse(search_url)
+    assert parts.scheme == "https"
+    assert parts.hostname == "erddap.invalid"
+    query = dict(parse_qsl(parts.query))
+    assert query["minLon"] == "-100"
+    assert int(float(query["minTime"])) == 1640995200

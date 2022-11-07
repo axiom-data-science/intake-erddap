@@ -90,17 +90,22 @@ class ERDDAPCatalog(Catalog):
     def _load_df(self):
         e = self.get_client()
         if len(self.kwargs_search) > 0:
-            search_url = e.get_search_url(
-                response="csv",
-                **self.kwargs_search,
-                items_per_page=100000,
-            )
-            self.search_url = search_url
-            df = pd.read_csv(search_url)
+            self.search_url = self.get_search_url()
+            df = pd.read_csv(self.search_url)
             df.rename(columns={"Dataset ID": "datasetID"}, inplace=True)
             return df
 
         return e.to_pandas()
+
+    def get_search_url(self) -> str:
+        """Return the search URL used in generating the catalog."""
+        e = self.get_client()
+        search_url = e.get_search_url(
+            response="csv",
+            **self.kwargs_search,
+            items_per_page=100000,
+        )
+        return search_url
 
     def get_client(self) -> ERDDAP:
         """Return an initialized ERDDAP Client."""
@@ -142,7 +147,8 @@ class ERDDAPCatalog(Catalog):
                 getshell=False,
             )
             entry._metadata = {
-                "info_url": e.get_info_url(response="csv", dataset_id=dataset_id)
+                "info_url": e.get_info_url(response="csv", dataset_id=dataset_id),
+                "extras": "blahblah",
             }
             entry._plugin = [ERDDAPSource]
 
