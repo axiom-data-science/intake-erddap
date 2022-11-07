@@ -167,3 +167,4 @@ def test_params_search(mock_read_csv):
     query = dict(parse_qsl(parts.query))
     assert query["minLon"] == "-100"
     assert int(float(query["minTime"])) == 1640995200
+    assert query["standard_name"] == "sea_water_temperature"
