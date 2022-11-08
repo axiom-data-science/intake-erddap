@@ -1,6 +1,6 @@
 """Catalog implementation for intake-erddap."""
 
-from typing import Dict, Optional, Tuple, Type, Union
+from typing import Dict, MutableMapping, Optional, Tuple, Type, Union
 
 import pandas as pd
 
@@ -33,9 +33,10 @@ class ERDDAPCatalog(Catalog):
     def __init__(
         self,
         server: str,
-        kwargs_search: Dict[str, Union[str, int, float]] = None,
+        kwargs_search: MutableMapping[str, Union[str, int, float]] = None,
         category_search: Optional[Tuple[str, str]] = None,
         erddap_client: Optional[Type[ERDDAP]] = None,
+        use_source_constraints: bool = True,
         **kwargs,
     ):
         """ERDDAPCatalog initialization
@@ -57,8 +58,14 @@ class ERDDAPCatalog(Catalog):
             custom_criteria key to narrow the search by, which will be matched to the category results
             using the custom_criteria that must be set up or input by the user, with `cf-pandas`.
             Currently only a single key can be matched at a time.
+        use_source_constraints : bool, default True
+            Any relevant search parameter defined in kwargs_search will be
+            passed to the source objects as contraints.
+
         """
         self._erddap_client = erddap_client or ERDDAP
+        self._entries: Dict[str, LocalCatalogEntry] = {}
+        self._use_source_contraints = use_source_constraints
         self.server = server
         self.search_url = None
 
@@ -131,7 +138,12 @@ class ERDDAPCatalog(Catalog):
                 "server": self.server,
                 "dataset_id": dataset_id,
                 "protocol": "tabledap",
+                "constraints": {},
             }
+            if self._use_source_contraints and "min_time" in self.kwargs_search:
+                args["constraints"]["time>="] = self.kwargs_search["min_time"]
+            if self._use_source_contraints and "max_time" in self.kwargs_search:
+                args["constraints"]["time<="] = self.kwargs_search["max_time"]
 
             entry = LocalCatalogEntry(
                 dataset_id,
