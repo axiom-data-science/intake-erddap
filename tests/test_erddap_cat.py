@@ -13,6 +13,14 @@ from erddapy import ERDDAP
 from intake_erddap.erddap_cat import ERDDAPCatalog
 
 
+@pytest.fixture
+def single_dataset_catalog() -> pd.DataFrame:
+    """Fixture returns a dataframe with a single dataset ID."""
+    df = pd.DataFrame()
+    df["datasetID"] = ["abc123"]
+    return df
+
+
 def test_nothing():
     """This test exists to ensure that at least one test works."""
     pass
@@ -149,7 +157,7 @@ def test_params_search(mock_read_csv):
     df["datasetID"] = ["allDatasets", "abc123"]
     mock_read_csv.return_value = df
     erddap_url = "https://erddap.invalid/erddap"
-    search = search = {
+    search = {
         "min_lon": -100,
         "max_lon": -54,
         "min_lat": 19,
@@ -168,3 +176,17 @@ def test_params_search(mock_read_csv):
     assert query["minLon"] == "-100"
     assert int(float(query["minTime"])) == 1640995200
     assert query["standard_name"] == "sea_water_temperature"
+
+
+@mock.patch("pandas.read_csv")
+def test_constraints_present_in_source(mock_read_csv, single_dataset_catalog):
+    mock_read_csv.return_value = single_dataset_catalog
+    server = "https://erddap.invalid/erddap"
+    search = {
+        "min_time": "2022-01-01",
+        "max_time": "2022-11-07",
+    }
+    cat = ERDDAPCatalog(server=server, kwargs_search=search)
+    source = next(cat.values())
+    assert source._constraints["time>="] == "2022-01-01"
+    assert source._constraints["time<="] == "2022-11-07"

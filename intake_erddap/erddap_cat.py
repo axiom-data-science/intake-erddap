@@ -1,6 +1,6 @@
 """Catalog implementation for intake-erddap."""
 
-from typing import Dict, Optional, Tuple, Type, Union
+from typing import Dict, MutableMapping, Optional, Tuple, Type, Union
 
 import pandas as pd
 
@@ -33,7 +33,7 @@ class ERDDAPCatalog(Catalog):
     def __init__(
         self,
         server: str,
-        kwargs_search: Dict[str, Union[str, int, float]] = None,
+        kwargs_search: MutableMapping[str, Union[str, int, float]] = None,
         category_search: Optional[Tuple[str, str]] = None,
         erddap_client: Optional[Type[ERDDAP]] = None,
         **kwargs,
@@ -59,6 +59,7 @@ class ERDDAPCatalog(Catalog):
             Currently only a single key can be matched at a time.
         """
         self._erddap_client = erddap_client or ERDDAP
+        self._entries: Dict[str, LocalCatalogEntry] = {}
         self.server = server
         self.search_url = None
 
@@ -131,7 +132,12 @@ class ERDDAPCatalog(Catalog):
                 "server": self.server,
                 "dataset_id": dataset_id,
                 "protocol": "tabledap",
+                "constraints": {},
             }
+            if "min_time" in self.kwargs_search:
+                args["constraints"]["time>="] = self.kwargs_search["min_time"]
+            if "max_time" in self.kwargs_search:
+                args["constraints"]["time<="] = self.kwargs_search["max_time"]
 
             entry = LocalCatalogEntry(
                 dataset_id,
