@@ -190,3 +190,9 @@ def test_constraints_present_in_source(mock_read_csv, single_dataset_catalog):
     source = next(cat.values())
     assert source._constraints["time>="] == "2022-01-01"
     assert source._constraints["time<="] == "2022-11-07"
+
+    cat = ERDDAPCatalog(
+        server=server, kwargs_search=search, use_source_constraints=False
+    )
+    source = next(cat.values())
+    assert len(source._constraints) == 0
