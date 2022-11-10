@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from unittest import mock
 
+import dask.array as da
 import numpy as np
 import pandas as pd
 import pytest
@@ -14,9 +15,7 @@ import xarray as xr
 from intake_erddap.erddap import GridDAPSource, TableDAPSource
 
 
-@pytest.fixture
-def fake_grid() -> xr.Dataset:
-    """Return a fake grid for testing purposes."""
+def _grid(grid_data) -> xr.Dataset:
 
     time = xr.DataArray(
         data=np.array(["2022-01-01T00:00:00"], dtype="<M8[s]"),
@@ -36,7 +35,7 @@ def fake_grid() -> xr.Dataset:
     )
 
     temp = xr.DataArray(
-        data=(np.ones((1, 180, 360)) * 15),
+        data=grid_data,
         dims=("time", "lat", "lon"),
         attrs={"standard_name": "air_temperature", "units": "deg_C"},
     )
@@ -44,6 +43,20 @@ def fake_grid() -> xr.Dataset:
     ds = xr.Dataset({"time": time, "temp": temp, "lon": lon, "lat": lat})
     ds.attrs["_NCProperties"] = "blah"
     return ds
+
+
+@pytest.fixture
+def fake_grid() -> xr.Dataset:
+    """Return a fake grid for testing purposes."""
+    grid_data = np.ones((1, 180, 360)) * 15
+    return _grid(grid_data)
+
+
+@pytest.fixture
+def fake_dask_grid() -> xr.Dataset:
+    """Return a fake grid for testing purposes."""
+    grid_data = da.ones((1, 180, 360)) * 15
+    return _grid(grid_data)
 
 
 @mock.patch("intake_erddap.erddap.TableDAPSource._get_dataset_metadata")
@@ -100,7 +113,7 @@ def test_tabledap_source_get_dataset_metadata(mock_get):
 
 
 @mock.patch("xarray.open_dataset")
-def test_griddap_source(mock_open_dataset, fake_grid):
+def test_griddap_source_no_chunks(mock_open_dataset, fake_grid):
     server = "https://erddap.invalid"
     dataset_id = "abc123"
     mock_open_dataset.return_value = fake_grid
@@ -124,3 +137,13 @@ def test_griddap_source(mock_open_dataset, fake_grid):
     source.close()
     assert source._ds is None
     assert source._schema is None
+
+
+@mock.patch("xarray.open_dataset")
+def test_griddap_source_with_dask(mock_open_dataset, fake_dask_grid):
+    server = "https://erddap.invalid"
+    dataset_id = "abc123"
+    mock_open_dataset.return_value = fake_dask_grid
+    source = GridDAPSource(server=server, dataset_id=dataset_id)
+    arr = source.read_partition(("temp", 0))
+    assert isinstance(arr, np.ndarray)

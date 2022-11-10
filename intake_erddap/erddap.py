@@ -10,7 +10,6 @@ import xarray as xr
 
 from erddapy import ERDDAP
 from intake.source import base
-from intake_xarray.xarray_container import serialize_zarr_ds
 
 from .version import __version__
 
@@ -317,8 +316,6 @@ class GridDAPSource(ERDDAPSource):
                 },
                 "coords": tuple(self._ds.coords.keys()),
             }
-            if getattr(self, "on_server", False):
-                metadata["internal"] = serialize_zarr_ds
             metadata.update(self._ds.attrs)
             metadata["variables"] = {}
             for varname in self._ds.variables:
@@ -363,11 +360,8 @@ class GridDAPSource(ERDDAPSource):
             i = tuple(i)
         # Make mypy happy
         assert self._ds is not None
-        if hasattr(self._ds, "variables") or i[0] in self._ds.coords:
-            arr = self._ds[i[0]].data
-            idx = i[1:]
-        else:
-            arr = self._ds.data
+        arr = self._ds[i[0]].data
+        idx = i[1:]
         if isinstance(arr, np.ndarray):
             return arr
         # dask array
