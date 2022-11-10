@@ -3,10 +3,12 @@ channels:
   - conda-forge
 dependencies:
   - python
+  - numpy
   - pandas
   - erddapy
   - panel
   - intake
+  - intake-xarray>=0.6.1
   - pip
   - pip:
     - cf-pandas

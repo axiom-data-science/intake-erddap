@@ -8,7 +8,7 @@ from erddapy import ERDDAP
 from intake.catalog.base import Catalog
 from intake.catalog.local import LocalCatalogEntry
 
-from .erddap import ERDDAPSource
+from .erddap import GridDAPSource, TableDAPSource
 from .utils import match_key_to_category
 from .version import __version__
 
@@ -37,6 +37,7 @@ class ERDDAPCatalog(Catalog):
         category_search: Optional[Tuple[str, str]] = None,
         erddap_client: Optional[Type[ERDDAP]] = None,
         use_source_constraints: bool = True,
+        protocol: str = "tabledap",
         **kwargs,
     ):
         """ERDDAPCatalog initialization
@@ -61,11 +62,16 @@ class ERDDAPCatalog(Catalog):
         use_source_constraints : bool, default True
             Any relevant search parameter defined in kwargs_search will be
             passed to the source objects as contraints.
+        protocol : str, default "tabledap"
+            One of the two supported ERDDAP Data Access Protocols: "griddap", or
+            "tabledap". "tabledap" will present tabular datasets using pandas,
+            meanwhile "griddap" will use xarray.
 
         """
         self._erddap_client = erddap_client or ERDDAP
         self._entries: Dict[str, LocalCatalogEntry] = {}
         self._use_source_contraints = use_source_constraints
+        self._protocol = protocol
         self.server = server
         self.search_url = None
 
@@ -117,7 +123,7 @@ class ERDDAPCatalog(Catalog):
     def get_client(self) -> ERDDAP:
         """Return an initialized ERDDAP Client."""
         e = self._erddap_client(self.server)
-        e.protocol = "tabledap"
+        e.protocol = self._protocol
         e.dataset_id = "allDatasets"
         return e
 
@@ -137,13 +143,11 @@ class ERDDAPCatalog(Catalog):
             args = {
                 "server": self.server,
                 "dataset_id": dataset_id,
-                "protocol": "tabledap",
+                "protocol": self._protocol,
                 "constraints": {},
             }
-            if self._use_source_contraints and "min_time" in self.kwargs_search:
-                args["constraints"]["time>="] = self.kwargs_search["min_time"]
-            if self._use_source_contraints and "max_time" in self.kwargs_search:
-                args["constraints"]["time<="] = self.kwargs_search["max_time"]
+            if self._protocol == "tabledap":
+                args["constraints"].update(self._get_tabledap_constraints())
 
             entry = LocalCatalogEntry(
                 dataset_id,
@@ -158,9 +162,23 @@ class ERDDAPCatalog(Catalog):
                 getenv=False,
                 getshell=False,
             )
-            entry._metadata = {
-                "info_url": e.get_info_url(response="csv", dataset_id=dataset_id),
-            }
-            entry._plugin = [ERDDAPSource]
+            if self._protocol == "tabledap":
+                entry._metadata = {
+                    "info_url": e.get_info_url(response="csv", dataset_id=dataset_id),
+                }
+                entry._plugin = [TableDAPSource]
+            elif self._protocol == "griddap":
+                entry._plugin = [GridDAPSource]
+            else:
+                raise ValueError(f"Unsupported protocol: {self._protocol}")
 
             self._entries[dataset_id] = entry
+
+    def _get_tabledap_constraints(self) -> Dict[str, Union[str, int, float]]:
+        """Return the constraints dictionary for a tabledap source."""
+        result = {}
+        if self._use_source_contraints and "min_time" in self.kwargs_search:
+            result["time>="] = self.kwargs_search["min_time"]
+        if self._use_source_contraints and "max_time" in self.kwargs_search:
+            result["time<="] = self.kwargs_search["max_time"]
+        return result
