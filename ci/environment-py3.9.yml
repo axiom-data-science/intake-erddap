@@ -3,10 +3,12 @@ channels:
   - conda-forge
 dependencies:
   - python=3.9
+  - numpy
   - pandas
   - erddapy
   - panel
   - intake
+  - intake-xarray>=0.6.1
   - pytest
   - pytest-cov
   - isort
