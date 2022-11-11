@@ -10,6 +10,7 @@ import pytest
 
 from erddapy import ERDDAP
 
+from intake_erddap.erddap import GridDAPSource
 from intake_erddap.erddap_cat import ERDDAPCatalog
 
 
@@ -196,3 +197,28 @@ def test_constraints_present_in_source(mock_read_csv, single_dataset_catalog):
     )
     source = next(cat.values())
     assert len(source._constraints) == 0
+
+
+@mock.patch("pandas.read_csv")
+def test_catalog_with_griddap(mock_read_csv, single_dataset_catalog):
+    mock_read_csv.return_value = single_dataset_catalog
+    server = "https://erddap.invalid/erddap"
+    search = {
+        "min_time": "2022-01-01",
+        "max_time": "2022-11-07",
+    }
+    cat = ERDDAPCatalog(server=server, kwargs_search=search, protocol="griddap")
+    source = next(cat.values())
+    assert isinstance(source, GridDAPSource)
+
+
+@mock.patch("pandas.read_csv")
+def test_catalog_with_unsupported_protocol(mock_read_csv, single_dataset_catalog):
+    server = "https://erddap.invalid/erddap"
+    search = {
+        "min_time": "2022-01-01",
+        "max_time": "2022-11-07",
+    }
+    mock_read_csv.return_value = single_dataset_catalog
+    with pytest.raises(ValueError):
+        ERDDAPCatalog(server=server, kwargs_search=search, protocol="fakedap")

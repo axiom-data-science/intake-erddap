@@ -23,6 +23,7 @@ setup(
     entry_points={
         "intake.drivers": [
             "erddap = intake_erddap.erddap:ERDDAPSource",
+            "tabledap = intake_erddap.erddap:TableDAPSource",
             "erddap_cat = intake_erddap.erddap_cat:ERDDAPCatalog",
         ]
     },
