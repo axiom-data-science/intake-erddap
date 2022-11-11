@@ -91,17 +91,19 @@ def test_erddap_catalog_searching_variable(mock_read_csv):
 @pytest.mark.integration
 def test_ioos_erddap_catalog_and_source():
     """Integration test against IOOS Sensors ERDDAP."""
+    bbox = (-73.32, 39.92, -69.17, 42.27) 
     kw = {
-        "min_lon": -180,
-        "max_lon": -156,
-        "min_lat": 50,
-        "max_lat": 66,
+        "min_lon": bbox[0],
+        "max_lon": bbox[2],
+        "min_lat": bbox[1],
+        "max_lat": bbox[3],
         "min_time": "2021-4-1",
         "max_time": "2021-4-2",
     }
     server = "https://erddap.sensors.ioos.us/erddap"
     cat_sensors = intake.open_erddap_cat(server, kwargs_search=kw)
-    df = cat_sensors[list(cat_sensors)[0]].read()
+    source = cat_sensors["gov_noaa_water_wstr1"]
+    df = source.read()
     assert df is not None
     assert isinstance(df, pd.DataFrame)
     assert len(df) > 0
