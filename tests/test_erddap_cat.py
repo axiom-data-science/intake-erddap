@@ -91,7 +91,7 @@ def test_erddap_catalog_searching_variable(mock_read_csv):
 @pytest.mark.integration
 def test_ioos_erddap_catalog_and_source():
     """Integration test against IOOS Sensors ERDDAP."""
-    bbox = (-73.32, 39.92, -69.17, 42.27) 
+    bbox = (-73.32, 39.92, -69.17, 42.27)
     kw = {
         "min_lon": bbox[0],
         "max_lon": bbox[2],
