@@ -1,6 +1,7 @@
 """Catalog implementation for intake-erddap."""
 
 from typing import Dict, List, MutableMapping, Optional, Tuple, Type, Union
+from urllib.error import HTTPError
 
 import pandas as pd
 
@@ -104,7 +105,14 @@ class ERDDAPCatalog(Catalog):
     def _load_df(self) -> pd.DataFrame:
         frames = []
         for url in self.get_search_urls():
-            df = pd.read_csv(url)
+            try:
+                df = pd.read_csv(url)
+            except HTTPError as e:
+                if e.code == 404:
+                    # TODO: use logging
+                    print(f"WARNING: search {url} returned HTTP 404")
+                    continue
+                raise
             df.rename(columns={"Dataset ID": "datasetID"}, inplace=True)
             frames.append(df)
         result = pd.concat(frames)
@@ -123,7 +131,10 @@ class ERDDAPCatalog(Catalog):
         # Generalize approach: if either are defined, set to list and iterate
 
         if not any(
-            [i in self.kwargs_search for i in ("standard_name", "variableName")]
+            [
+                i in self.kwargs_search
+                for i in ("standard_name", "variableName", "search_for")
+            ]
         ):
             search_url = e.get_search_url(
                 response="csv",
@@ -144,6 +155,13 @@ class ERDDAPCatalog(Catalog):
                     utils.as_a_list(self.kwargs_search["variableName"])
                 )
             )
+        if "search_for" in self.kwargs_search:
+            urls.extend(
+                self._get_search_for_search_urls(
+                    utils.as_a_list(self.kwargs_search["search_for"])
+                )
+            )
+
         return urls
 
     def _get_standard_name_search_urls(self, standard_names: List[str]) -> List[str]:
@@ -156,6 +174,7 @@ class ERDDAPCatalog(Catalog):
         for standard_name in standard_names:
             params = self.kwargs_search.copy()
             params.pop("variableName", None)
+            params.pop("search_for", None)
             params["standard_name"] = standard_name
 
             search_url = e.get_search_url(
@@ -176,10 +195,33 @@ class ERDDAPCatalog(Catalog):
         for variable_name in variable_names:
             params = self.kwargs_search.copy()
             params.pop("standard_name", None)
+            params.pop("search_for", None)
             params["variableName"] = variable_name
 
             search_url = e.get_search_url(
                 response="csv",
+                **params,
+                items_per_page=100000,
+            )
+            urls.append(search_url)
+        return urls
+
+    def _get_search_for_search_urls(self, search_for: List[str]) -> List[str]:
+        """Return the search urls for each search query."""
+        e = self.get_client()
+        urls = []
+        # mypy is annoying sometimes.
+        assert isinstance(self.kwargs_search, dict)
+
+        for query in search_for:
+            params = self.kwargs_search.copy()
+            params.pop("standard_name", None)
+            params.pop("variableName", None)
+            params.pop("search_for", None)
+
+            search_url = e.get_search_url(
+                response="csv",
+                search_for=query,
                 **params,
                 items_per_page=100000,
             )
