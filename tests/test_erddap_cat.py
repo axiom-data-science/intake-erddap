@@ -227,7 +227,27 @@ def test_catalog_get_search_urls_by_category(mock_read_csv, single_dataset_catal
     kwargs_search = {
         "standard_name": ["air_pressure", "air_temperature"],
         "variableName": ["temp", "airTemp"],
+        "search_for": ["kintsugi", "Asano"],
     }
     catalog = ERDDAPCatalog(server=SERVER_URL, kwargs_search=kwargs_search)
     search_urls = catalog.get_search_urls()
-    assert len(search_urls) == 4
+    assert len(search_urls) == 6
+
+
+@mock.patch("pandas.read_csv")
+def test_catalog_query_search_for(mock_read_csv, single_dataset_catalog):
+    mock_read_csv.return_value = single_dataset_catalog
+    kwargs_search = {
+        "search_for": ["air_pressure", "air_temperature"],
+    }
+    catalog = ERDDAPCatalog(server=SERVER_URL, kwargs_search=kwargs_search)
+    search_urls = catalog.get_search_urls()
+    url = search_urls[0]
+    parts = urlparse(url)
+    query = dict(parse_qsl(parts.query))
+    assert query["searchFor"] == "air_pressure"
+
+    url = search_urls[1]
+    parts = urlparse(url)
+    query = dict(parse_qsl(parts.query))
+    assert query["searchFor"] == "air_temperature"
