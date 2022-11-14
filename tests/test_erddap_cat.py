@@ -253,11 +253,16 @@ def test_catalog_query_search_for(mock_read_csv, single_dataset_catalog):
     query = dict(parse_qsl(parts.query))
     assert query["searchFor"] == "air_temperature"
 
+
 @mock.patch("pandas.read_csv")
 def test_search_returns_404(mock_read_csv, single_dataset_catalog):
-    mock_read_csv.side_effect = HTTPError(code=404, msg='Blah', url=SERVER_URL, hdrs={}, fp={})
+    mock_read_csv.side_effect = HTTPError(
+        code=404, msg="Blah", url=SERVER_URL, hdrs={}, fp={}
+    )
     with pytest.raises(ValueError):
         ERDDAPCatalog(server=SERVER_URL)
-    mock_read_csv.side_effect = HTTPError(code=500, msg='Blah', url=SERVER_URL, hdrs={}, fp={})
+    mock_read_csv.side_effect = HTTPError(
+        code=500, msg="Blah", url=SERVER_URL, hdrs={}, fp={}
+    )
     with pytest.raises(HTTPError):
         ERDDAPCatalog(server=SERVER_URL)
