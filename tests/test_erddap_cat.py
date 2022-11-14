@@ -14,6 +14,9 @@ from intake_erddap.erddap import GridDAPSource
 from intake_erddap.erddap_cat import ERDDAPCatalog
 
 
+SERVER_URL = "http://erddap.invalid/erddap"
+
+
 @pytest.fixture
 def single_dataset_catalog() -> pd.DataFrame:
     """Fixture returns a dataframe with a single dataset ID."""
@@ -27,14 +30,13 @@ def test_nothing():
     pass
 
 
-@mock.patch("erddapy.ERDDAP.to_pandas")
-def test_erddap_catalog(mock_to_pandas):
+@mock.patch("pandas.read_csv")
+def test_erddap_catalog(mock_read_csv):
     """Test basic catalog API."""
     results = pd.DataFrame()
     results["datasetID"] = ["abc123"]
-    mock_to_pandas.return_value = results
-    server = "http://erddap.invalid/erddap"
-    cat = ERDDAPCatalog(server=server)
+    mock_read_csv.return_value = results
+    cat = ERDDAPCatalog(server=SERVER_URL)
     assert list(cat) == ["abc123"]
 
 
@@ -52,8 +54,7 @@ def test_erddap_catalog_searching(mock_read_csv):
         "min_time": "2021-4-1",
         "max_time": "2021-4-2",
     }
-    server = "http://erddap.invalid/erddap"
-    cat = ERDDAPCatalog(server=server, kwargs_search=kw)
+    cat = ERDDAPCatalog(server=SERVER_URL, kwargs_search=kw)
     assert list(cat) == ["abc123"]
 
 
@@ -80,9 +81,8 @@ def test_erddap_catalog_searching_variable(mock_read_csv):
         "min_time": "2021-4-1",
         "max_time": "2021-4-2",
     }
-    server = "http://erddap.invalid/erddap"
     cat = ERDDAPCatalog(
-        server=server, kwargs_search=kw, category_search=("standard_name", "temp")
+        server=SERVER_URL, kwargs_search=kw, category_search=("standard_name", "temp")
     )
     assert "standard_name" in cat.kwargs_search
     assert cat.kwargs_search["standard_name"] == "sea_water_temperature"
@@ -100,8 +100,7 @@ def test_ioos_erddap_catalog_and_source():
         "min_time": "2021-4-1",
         "max_time": "2021-4-2",
     }
-    server = "https://erddap.sensors.ioos.us/erddap"
-    cat_sensors = intake.open_erddap_cat(server, kwargs_search=kw)
+    cat_sensors = intake.open_erddap_cat(server=SERVER_URL, kwargs_search=kw)
     source = cat_sensors["gov_noaa_water_wstr1"]
     df = source.read()
     assert df is not None
@@ -117,10 +116,9 @@ def test_invalid_kwarg_search():
         "min_time": "2021-4-1",
         "max_time": "2021-4-2",
     }
-    server = "http://erddap.sensors.ioos.us/erddap"
 
     with pytest.raises(ValueError):
-        intake.open_erddap_cat(server, kwargs_search=kw)
+        intake.open_erddap_cat(server=SERVER_URL, kwargs_search=kw)
 
     kw = {
         "min_lon": -180,
@@ -131,26 +129,26 @@ def test_invalid_kwarg_search():
     }
 
     with pytest.raises(ValueError):
-        intake.open_erddap_cat(server, kwargs_search=kw)
+        intake.open_erddap_cat(server=SERVER_URL, kwargs_search=kw)
 
 
-def test_catalog_uses_di_client():
+@mock.patch("pandas.read_csv")
+def test_catalog_uses_di_client(mock_read_csv, single_dataset_catalog):
     """Tests that the catalog uses the dependency injection provided client."""
+    mock_read_csv.return_value = single_dataset_catalog
     mock_erddap_client = mock.create_autospec(ERDDAP)
-    server = "http://erddap.invalid/erddap"
-    cat = ERDDAPCatalog(server=server, erddap_client=mock_erddap_client)
+    cat = ERDDAPCatalog(server=SERVER_URL, erddap_client=mock_erddap_client)
     client = cat.get_client()
     assert isinstance(client, mock.NonCallableMagicMock)
 
 
-@mock.patch("erddapy.ERDDAP.to_pandas")
-def test_catalog_skips_all_datasets_row(mock_to_pandas):
+@mock.patch("pandas.read_csv")
+def test_catalog_skips_all_datasets_row(mock_read_csv):
     """Tests that the catalog results ignore allDatasets special dataset."""
     df = pd.DataFrame()
     df["datasetID"] = ["allDatasets", "abc123"]
-    mock_to_pandas.return_value = df
-    server = "http://erddap.invalid/erddap"
-    cat = ERDDAPCatalog(server=server)
+    mock_read_csv.return_value = df
+    cat = ERDDAPCatalog(server=SERVER_URL)
     assert list(cat) == ["abc123"]
 
 
@@ -170,9 +168,9 @@ def test_params_search(mock_read_csv):
         "standard_name": "sea_water_temperature",
     }
     cat = ERDDAPCatalog(server=erddap_url, kwargs_search=search)
-    search_url = cat.get_search_url()
-    assert search_url is not None
-    parts = urlparse(search_url)
+    search_urls = cat.get_search_urls()
+    assert search_urls
+    parts = urlparse(search_urls[0])
     assert parts.scheme == "https"
     assert parts.hostname == "erddap.invalid"
     query = dict(parse_qsl(parts.query))
@@ -184,18 +182,17 @@ def test_params_search(mock_read_csv):
 @mock.patch("pandas.read_csv")
 def test_constraints_present_in_source(mock_read_csv, single_dataset_catalog):
     mock_read_csv.return_value = single_dataset_catalog
-    server = "https://erddap.invalid/erddap"
     search = {
         "min_time": "2022-01-01",
         "max_time": "2022-11-07",
     }
-    cat = ERDDAPCatalog(server=server, kwargs_search=search)
+    cat = ERDDAPCatalog(server=SERVER_URL, kwargs_search=search)
     source = next(cat.values())
     assert source._constraints["time>="] == "2022-01-01"
     assert source._constraints["time<="] == "2022-11-07"
 
     cat = ERDDAPCatalog(
-        server=server, kwargs_search=search, use_source_constraints=False
+        server=SERVER_URL, kwargs_search=search, use_source_constraints=False
     )
     source = next(cat.values())
     assert len(source._constraints) == 0
@@ -204,23 +201,33 @@ def test_constraints_present_in_source(mock_read_csv, single_dataset_catalog):
 @mock.patch("pandas.read_csv")
 def test_catalog_with_griddap(mock_read_csv, single_dataset_catalog):
     mock_read_csv.return_value = single_dataset_catalog
-    server = "https://erddap.invalid/erddap"
     search = {
         "min_time": "2022-01-01",
         "max_time": "2022-11-07",
     }
-    cat = ERDDAPCatalog(server=server, kwargs_search=search, protocol="griddap")
+    cat = ERDDAPCatalog(server=SERVER_URL, kwargs_search=search, protocol="griddap")
     source = next(cat.values())
     assert isinstance(source, GridDAPSource)
 
 
 @mock.patch("pandas.read_csv")
 def test_catalog_with_unsupported_protocol(mock_read_csv, single_dataset_catalog):
-    server = "https://erddap.invalid/erddap"
     search = {
         "min_time": "2022-01-01",
         "max_time": "2022-11-07",
     }
     mock_read_csv.return_value = single_dataset_catalog
     with pytest.raises(ValueError):
-        ERDDAPCatalog(server=server, kwargs_search=search, protocol="fakedap")
+        ERDDAPCatalog(server=SERVER_URL, kwargs_search=search, protocol="fakedap")
+
+
+@mock.patch("pandas.read_csv")
+def test_catalog_get_search_urls_by_category(mock_read_csv, single_dataset_catalog):
+    mock_read_csv.return_value = single_dataset_catalog
+    kwargs_search = {
+        "standard_name": ["air_pressure", "air_temperature"],
+        "variableName": ["temp", "airTemp"],
+    }
+    catalog = ERDDAPCatalog(server=SERVER_URL, kwargs_search=kwargs_search)
+    search_urls = catalog.get_search_urls()
+    assert len(search_urls) == 4

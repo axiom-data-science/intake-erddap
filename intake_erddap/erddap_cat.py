@@ -1,6 +1,6 @@
 """Catalog implementation for intake-erddap."""
 
-from typing import Dict, MutableMapping, Optional, Tuple, Type, Union
+from typing import Dict, List, MutableMapping, Optional, Tuple, Type, Union
 
 import pandas as pd
 
@@ -8,6 +8,7 @@ from erddapy import ERDDAP
 from intake.catalog.base import Catalog
 from intake.catalog.local import LocalCatalogEntry
 
+from . import utils
 from .erddap import GridDAPSource, TableDAPSource
 from .utils import match_key_to_category
 from .version import __version__
@@ -100,25 +101,90 @@ class ERDDAPCatalog(Catalog):
 
         super(ERDDAPCatalog, self).__init__(**kwargs)
 
-    def _load_df(self):
-        e = self.get_client()
-        if len(self.kwargs_search) > 0:
-            self.search_url = self.get_search_url()
-            df = pd.read_csv(self.search_url)
+    def _load_df(self) -> pd.DataFrame:
+        frames = []
+        for url in self.get_search_urls():
+            df = pd.read_csv(url)
             df.rename(columns={"Dataset ID": "datasetID"}, inplace=True)
-            return df
+            frames.append(df)
+        result = pd.concat(frames)
+        result = result.drop_duplicates("datasetID")
+        return result
 
-        return e.to_pandas()
-
-    def get_search_url(self) -> str:
-        """Return the search URL used in generating the catalog."""
+    def get_search_urls(self) -> List[str]:
+        """Return the search URLs used in generating the catalog."""
         e = self.get_client()
-        search_url = e.get_search_url(
-            response="csv",
-            **self.kwargs_search,
-            items_per_page=100000,
-        )
-        return search_url
+        urls = []
+
+        # cases:
+        # - ks.standard_name is a list
+        # - variableName is a list
+        # - both are lists
+        # Generalize approach: if either are defined, set to list and iterate
+
+        if not any(
+            [i in self.kwargs_search for i in ("standard_name", "variableName")]
+        ):
+            search_url = e.get_search_url(
+                response="csv",
+                **self.kwargs_search,
+                items_per_page=100000,
+            )
+            return [search_url]
+
+        if "standard_name" in self.kwargs_search:
+            urls.extend(
+                self._get_standard_name_search_urls(
+                    utils.as_a_list(self.kwargs_search["standard_name"])
+                )
+            )
+        if "variableName" in self.kwargs_search:
+            urls.extend(
+                self._get_variable_name_search_urls(
+                    utils.as_a_list(self.kwargs_search["variableName"])
+                )
+            )
+        return urls
+
+    def _get_standard_name_search_urls(self, standard_names: List[str]) -> List[str]:
+        """Return the search urls for each standard_name."""
+        e = self.get_client()
+        urls = []
+        # mypy is annoying sometimes.
+        assert isinstance(self.kwargs_search, dict)
+
+        for standard_name in standard_names:
+            params = self.kwargs_search.copy()
+            params.pop("variableName", None)
+            params["standard_name"] = standard_name
+
+            search_url = e.get_search_url(
+                response="csv",
+                **params,
+                items_per_page=100000,
+            )
+            urls.append(search_url)
+        return urls
+
+    def _get_variable_name_search_urls(self, variable_names: List[str]) -> List[str]:
+        """Return the search urls for each variable name."""
+        e = self.get_client()
+        urls = []
+        # mypy is annoying sometimes.
+        assert isinstance(self.kwargs_search, dict)
+
+        for variable_name in variable_names:
+            params = self.kwargs_search.copy()
+            params.pop("standard_name", None)
+            params["variableName"] = variable_name
+
+            search_url = e.get_search_url(
+                response="csv",
+                **params,
+                items_per_page=100000,
+            )
+            urls.append(search_url)
+        return urls
 
     def get_client(self) -> ERDDAP:
         """Return an initialized ERDDAP Client."""

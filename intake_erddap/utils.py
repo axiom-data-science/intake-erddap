@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Utility functions."""
 
-from typing import Optional
+from typing import Any, Optional
 
 import cf_pandas as cfp
 import pandas as pd
@@ -82,3 +82,10 @@ def match_key_to_category(
     )
 
     return matching_category_value
+
+
+def as_a_list(value: Any) -> list:
+    """Wrap value in a list if it's not already."""
+    if not isinstance(value, list):
+        return [value]
+    return value
