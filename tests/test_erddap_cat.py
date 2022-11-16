@@ -1,5 +1,8 @@
 #!/usr/bin/env pytest
 """Unit tests."""
+import os
+
+from tempfile import mkstemp
 from unittest import mock
 from urllib.error import HTTPError
 from urllib.parse import parse_qsl, urlparse
@@ -11,7 +14,7 @@ import pytest
 
 from erddapy import ERDDAP
 
-from intake_erddap.erddap import GridDAPSource
+from intake_erddap.erddap import GridDAPSource, TableDAPSource
 from intake_erddap.erddap_cat import ERDDAPCatalog
 
 
@@ -29,6 +32,17 @@ def single_dataset_catalog() -> pd.DataFrame:
 def test_nothing():
     """This test exists to ensure that at least one test works."""
     pass
+
+
+@pytest.fixture
+def temporary_catalog():
+    fd, path = mkstemp(suffix=".yml")
+    os.close(fd)
+    try:
+        yield path
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
 
 
 @mock.patch("pandas.read_csv")
@@ -266,3 +280,27 @@ def test_search_returns_404(mock_read_csv, single_dataset_catalog):
     )
     with pytest.raises(HTTPError):
         ERDDAPCatalog(server=SERVER_URL)
+
+
+@mock.patch("pandas.read_csv")
+def test_saving_catalog(mock_read_csv, single_dataset_catalog, temporary_catalog):
+    mock_read_csv.return_value = single_dataset_catalog
+    cat = ERDDAPCatalog(server=SERVER_URL)
+    cat.save(temporary_catalog)
+
+    cat = intake.open_catalog(temporary_catalog)
+    source = next(cat.values())
+    assert isinstance(source, TableDAPSource)
+    assert source._protocol == "tabledap"
+    assert source._server == SERVER_URL
+    assert source._dataset_id == "abc123"
+
+    cat = ERDDAPCatalog(server=SERVER_URL, protocol="griddap")
+    cat.save(temporary_catalog)
+
+    cat = intake.open_catalog(temporary_catalog)
+    source = next(cat.values())
+    assert isinstance(source, GridDAPSource)
+    assert source._protocol == "griddap"
+    assert source._server == SERVER_URL
+    assert source._dataset_id == "abc123"

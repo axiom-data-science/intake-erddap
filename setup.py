@@ -22,8 +22,8 @@ setup(
     package_data={"": ["*.csv", "*.yml", "*.html"]},
     entry_points={
         "intake.drivers": [
-            "erddap = intake_erddap.erddap:ERDDAPSource",
             "tabledap = intake_erddap.erddap:TableDAPSource",
+            "griddap = intake_erddap.erddap:GridDAPSource",
             "erddap_cat = intake_erddap.erddap_cat:ERDDAPCatalog",
         ]
     },
