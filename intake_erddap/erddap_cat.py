@@ -40,6 +40,7 @@ class ERDDAPCatalog(Catalog):
         erddap_client: Optional[Type[ERDDAP]] = None,
         use_source_constraints: bool = True,
         protocol: str = "tabledap",
+        metadata: dict = None,
         **kwargs,
     ):
         """ERDDAPCatalog initialization
@@ -258,15 +259,11 @@ class ERDDAPCatalog(Catalog):
                 args["constraints"].update(self._get_tabledap_constraints())
 
             entry = LocalCatalogEntry(
-                dataset_id,
-                description,
-                "erddap",
-                True,
-                args,
-                {},
-                {},
-                {},
-                "",
+                name=dataset_id,
+                description=description,
+                driver=self._protocol,
+                args=args,
+                metadata={},
                 getenv=False,
                 getshell=False,
             )

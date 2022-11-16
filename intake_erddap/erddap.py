@@ -290,6 +290,7 @@ class GridDAPSource(ERDDAPSource):
         xarray_kwargs: dict = None,
         **kwargs,
     ):
+        self._server = server
         self._ds: Optional[xr.Dataset] = None
         self._chunks = chunks
         self._constraints = constraints or {}

@@ -1,11 +1,12 @@
 """intake-erddap package."""
-from .erddap import ERDDAPSource
+from .erddap import GridDAPSource, TableDAPSource
 from .erddap_cat import ERDDAPCatalog
 from .version import __version__
 
 
 __all__ = [
-    "ERDDAPSource",
     "ERDDAPCatalog",
+    "TableDAPSource",
+    "GridDAPSource",
     "__version__",
 ]
