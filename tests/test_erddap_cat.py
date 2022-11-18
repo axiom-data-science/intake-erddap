@@ -45,9 +45,11 @@ def temporary_catalog():
             os.unlink(path)
 
 
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
-def test_erddap_catalog(mock_read_csv):
+def test_erddap_catalog(mock_read_csv, load_metadata_mock):
     """Test basic catalog API."""
+    load_metadata_mock.return_value = {}
     results = pd.DataFrame()
     results["datasetID"] = ["abc123"]
     mock_read_csv.return_value = results
@@ -55,9 +57,11 @@ def test_erddap_catalog(mock_read_csv):
     assert list(cat) == ["abc123"]
 
 
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
-def test_erddap_catalog_searching(mock_read_csv):
+def test_erddap_catalog_searching(mock_read_csv, load_metadata_mock):
     """Test catalog with search parameters."""
+    load_metadata_mock.return_value = {}
     results = pd.DataFrame()
     results["datasetID"] = ["abc123"]
     mock_read_csv.return_value = results
@@ -73,8 +77,10 @@ def test_erddap_catalog_searching(mock_read_csv):
     assert list(cat) == ["abc123"]
 
 
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
-def test_erddap_catalog_searching_variable(mock_read_csv):
+def test_erddap_catalog_searching_variable(mock_read_csv, load_metadata_mock):
+    load_metadata_mock.return_value = {}
     df1 = pd.DataFrame()
     df1["Category"] = ["sea_water_temperature"]
     df1["URL"] = ["http://blah.com"]
@@ -115,12 +121,16 @@ def test_ioos_erddap_catalog_and_source():
         "min_time": "2021-4-1",
         "max_time": "2021-4-2",
     }
-    cat_sensors = intake.open_erddap_cat(server=SERVER_URL, kwargs_search=kw)
+    cat_sensors = intake.open_erddap_cat(
+        server="https://erddap.sensors.ioos.us/erddap", kwargs_search=kw
+    )
     source = cat_sensors["gov_noaa_water_wstr1"]
     df = source.read()
     assert df is not None
     assert isinstance(df, pd.DataFrame)
     assert len(df) > 0
+    for dataset_id in cat_sensors:
+        assert cat_sensors[dataset_id].metadata["institution"] is not None
 
 
 def test_invalid_kwarg_search():
@@ -147,8 +157,12 @@ def test_invalid_kwarg_search():
         intake.open_erddap_cat(server=SERVER_URL, kwargs_search=kw)
 
 
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
-def test_catalog_uses_di_client(mock_read_csv, single_dataset_catalog):
+def test_catalog_uses_di_client(
+    mock_read_csv, load_metadata_mock, single_dataset_catalog
+):
+    load_metadata_mock.return_value = {}
     """Tests that the catalog uses the dependency injection provided client."""
     mock_read_csv.return_value = single_dataset_catalog
     mock_erddap_client = mock.create_autospec(ERDDAP)
@@ -157,8 +171,10 @@ def test_catalog_uses_di_client(mock_read_csv, single_dataset_catalog):
     assert isinstance(client, mock.NonCallableMagicMock)
 
 
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
-def test_catalog_skips_all_datasets_row(mock_read_csv):
+def test_catalog_skips_all_datasets_row(mock_read_csv, load_metadata_mock):
+    load_metadata_mock.return_value = {}
     """Tests that the catalog results ignore allDatasets special dataset."""
     df = pd.DataFrame()
     df["datasetID"] = ["allDatasets", "abc123"]
@@ -167,8 +183,10 @@ def test_catalog_skips_all_datasets_row(mock_read_csv):
     assert list(cat) == ["abc123"]
 
 
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
-def test_params_search(mock_read_csv):
+def test_params_search(mock_read_csv, load_metadata_mock):
+    load_metadata_mock.return_value = {}
     df = pd.DataFrame()
     df["datasetID"] = ["allDatasets", "abc123"]
     mock_read_csv.return_value = df
@@ -194,8 +212,12 @@ def test_params_search(mock_read_csv):
     assert query["standard_name"] == "sea_water_temperature"
 
 
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
-def test_constraints_present_in_source(mock_read_csv, single_dataset_catalog):
+def test_constraints_present_in_source(
+    mock_read_csv, load_metadata_mock, single_dataset_catalog
+):
+    load_metadata_mock.return_value = {}
     mock_read_csv.return_value = single_dataset_catalog
     search = {
         "min_time": "2022-01-01",
@@ -213,8 +235,12 @@ def test_constraints_present_in_source(mock_read_csv, single_dataset_catalog):
     assert len(source._constraints) == 0
 
 
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
-def test_catalog_with_griddap(mock_read_csv, single_dataset_catalog):
+def test_catalog_with_griddap(
+    mock_read_csv, load_metadata_mock, single_dataset_catalog
+):
+    load_metadata_mock.return_value = {}
     mock_read_csv.return_value = single_dataset_catalog
     search = {
         "min_time": "2022-01-01",
@@ -225,8 +251,12 @@ def test_catalog_with_griddap(mock_read_csv, single_dataset_catalog):
     assert isinstance(source, GridDAPSource)
 
 
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
-def test_catalog_with_unsupported_protocol(mock_read_csv, single_dataset_catalog):
+def test_catalog_with_unsupported_protocol(
+    mock_read_csv, load_metadata_mock, single_dataset_catalog
+):
+    load_metadata_mock.return_value = {}
     search = {
         "min_time": "2022-01-01",
         "max_time": "2022-11-07",
@@ -236,8 +266,12 @@ def test_catalog_with_unsupported_protocol(mock_read_csv, single_dataset_catalog
         ERDDAPCatalog(server=SERVER_URL, kwargs_search=search, protocol="fakedap")
 
 
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
-def test_catalog_get_search_urls_by_category(mock_read_csv, single_dataset_catalog):
+def test_catalog_get_search_urls_by_category(
+    mock_read_csv, load_metadata_mock, single_dataset_catalog
+):
+    load_metadata_mock.return_value = {}
     mock_read_csv.return_value = single_dataset_catalog
     kwargs_search = {
         "standard_name": ["air_pressure", "air_temperature"],
@@ -249,8 +283,12 @@ def test_catalog_get_search_urls_by_category(mock_read_csv, single_dataset_catal
     assert len(search_urls) == 6
 
 
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
-def test_catalog_query_search_for(mock_read_csv, single_dataset_catalog):
+def test_catalog_query_search_for(
+    mock_read_csv, load_metadata_mock, single_dataset_catalog
+):
+    load_metadata_mock.return_value = {}
     mock_read_csv.return_value = single_dataset_catalog
     kwargs_search = {
         "search_for": ["air_pressure", "air_temperature"],
@@ -268,22 +306,28 @@ def test_catalog_query_search_for(mock_read_csv, single_dataset_catalog):
     assert query["searchFor"] == "air_temperature"
 
 
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
-def test_search_returns_404(mock_read_csv, single_dataset_catalog):
+def test_search_returns_404(mock_read_csv, load_metadata_mock):
+    load_metadata_mock.return_value = {}
     mock_read_csv.side_effect = HTTPError(
-        code=404, msg="Blah", url=SERVER_URL, hdrs={}, fp={}
+        code=404, msg="Blah", url=SERVER_URL, hdrs={}, fp=None
     )
     with pytest.raises(ValueError):
         ERDDAPCatalog(server=SERVER_URL)
     mock_read_csv.side_effect = HTTPError(
-        code=500, msg="Blah", url=SERVER_URL, hdrs={}, fp={}
+        code=500, msg="Blah", url=SERVER_URL, hdrs={}, fp=None
     )
     with pytest.raises(HTTPError):
         ERDDAPCatalog(server=SERVER_URL)
 
 
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
-def test_saving_catalog(mock_read_csv, single_dataset_catalog, temporary_catalog):
+def test_saving_catalog(
+    mock_read_csv, load_metadata_mock, single_dataset_catalog, temporary_catalog
+):
+    load_metadata_mock.return_value = {}
     mock_read_csv.return_value = single_dataset_catalog
     cat = ERDDAPCatalog(server=SERVER_URL)
     cat.save(temporary_catalog)
@@ -304,3 +348,17 @@ def test_saving_catalog(mock_read_csv, single_dataset_catalog, temporary_catalog
     assert source._protocol == "griddap"
     assert source._server == SERVER_URL
     assert source._dataset_id == "abc123"
+
+
+@mock.patch("intake_erddap.utils.get_erddap_metadata")
+@mock.patch("pandas.read_csv")
+def test_loading_metadata(
+    mock_read_csv, mock_get_erddap_metadata, single_dataset_catalog
+):
+    mock_read_csv.return_value = single_dataset_catalog
+    mock_get_erddap_metadata.return_value = {
+        "abc123": {"datasetID": "abc123", "institution": "FOMO"}
+    }
+
+    cat = ERDDAPCatalog(server=SERVER_URL)
+    assert cat["abc123"].metadata["institution"] == "FOMO"
