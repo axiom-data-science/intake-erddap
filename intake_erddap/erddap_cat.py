@@ -1,5 +1,6 @@
 """Catalog implementation for intake-erddap."""
 
+from logging import getLogger
 from typing import Dict, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 from urllib.error import HTTPError
 
@@ -13,6 +14,9 @@ from . import utils
 from .erddap import GridDAPSource, TableDAPSource
 from .utils import match_key_to_category
 from .version import __version__
+
+
+log = getLogger("intake-erddap")
 
 
 class ERDDAPCatalog(Catalog):
@@ -111,8 +115,7 @@ class ERDDAPCatalog(Catalog):
                 df = pd.read_csv(url)
             except HTTPError as e:
                 if e.code == 404:
-                    # TODO: use logging
-                    print(f"WARNING: search {url} returned HTTP 404")
+                    log.warning(f"search {url} returned HTTP 404")
                     continue
                 raise
             df.rename(columns={"Dataset ID": "datasetID"}, inplace=True)

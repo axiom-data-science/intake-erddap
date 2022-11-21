@@ -1,6 +1,7 @@
 """Source implementations for intake-erddap."""
 import typing
 
+from logging import getLogger
 from typing import List, Optional, Tuple, Type, Union
 
 import numpy as np
@@ -12,6 +13,9 @@ from erddapy import ERDDAP
 from intake.source import base
 
 from .version import __version__
+
+
+log = getLogger("intake-erddap")
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -193,10 +197,7 @@ class TableDAPSource(ERDDAPSource):
             try:
                 value = self._parse_metadata_value(value=value, dtype=dtype)
             except ValueError:
-                # TODO: Convert to logging statement
-                print(
-                    f"WARNING: could not convert {dtype} {varname}:{attrname} = {value}"
-                )
+                log.warning(f"could not convert {dtype} {varname}:{attrname} = {value}")
                 continue
 
             if varname == "NC_GLOBAL":
