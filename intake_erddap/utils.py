@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """Utility functions."""
 
-from typing import Any, Optional
+from typing import Any, Dict, Mapping, Optional
+from urllib.parse import quote_plus, urlencode
 
 import cf_pandas as cfp
 import pandas as pd
@@ -89,3 +90,70 @@ def as_a_list(value: Any) -> list:
     if not isinstance(value, list):
         return [value]
     return value
+
+
+def get_erddap_metadata(
+    server: str, constraints: Mapping[str, Any], http_client: Any = None
+) -> Mapping[str, dict]:
+    """Return a map for all the dataset metadata."""
+    if http_client is None:
+        import requests
+
+        http_client = requests
+    constraints_query = map_constraints_to_tabledap(constraints)
+    fields = [
+        "datasetID",
+        "institution",
+        "title",
+        "summary",
+        "minLongitude",
+        "maxLongitude",
+        "minLatitude",
+        "maxLatitude",
+        "minTime",
+        "maxTime",
+        "griddap",
+        "tabledap",
+    ]
+    url = f"{server}/tabledap/allDatasets.json?" + quote_plus(",".join(fields))
+    if constraints_query:
+        url += "&" + urlencode(constraints_query)
+    resp = http_client.get(url)
+    resp.raise_for_status()
+    return parse_erddap_tabledap_response(resp.json())
+
+
+def parse_erddap_tabledap_response(data: dict) -> Mapping[str, dict]:
+    """Convert table format into key value mapping."""
+    results = {}
+    for row in data["table"]["rows"]:
+        entry: Dict[str, Any] = {}
+        for i, key in enumerate(data["table"]["columnNames"]):
+            dtype = data["table"]["columnTypes"][i]
+            if dtype in ("double", "float"):
+                value = float(row[i])
+            elif dtype in ("long", "int"):
+                value = int(row[i])
+            else:
+                value = row[i]
+            entry[key] = value
+        results[entry["datasetID"]] = entry
+    return results
+
+
+def map_constraints_to_tabledap(constraints: Mapping[str, Any]) -> dict:
+    """Transform the constraints dict that this package accepts to an ERDDAP query dict."""
+    constraints_query = {}
+    if "max_time" in constraints:
+        constraints_query["minTime<"] = constraints["max_time"]
+    if "min_time" in constraints:
+        constraints_query["maxTime>"] = constraints["min_time"]
+    if "min_lon" in constraints:
+        constraints_query["maxLongitude>"] = constraints["min_lon"]
+    if "max_lon" in constraints:
+        constraints_query["minLongitude<"] = constraints["max_lon"]
+    if "min_lat" in constraints:
+        constraints_query["maxLatitude>"] = constraints["min_lat"]
+    if "max_lat" in constraints:
+        constraints_query["minLatitude<"] = constraints["max_lat"]
+    return constraints_query

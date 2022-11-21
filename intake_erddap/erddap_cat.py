@@ -1,6 +1,6 @@
 """Catalog implementation for intake-erddap."""
 
-from typing import Dict, List, MutableMapping, Optional, Tuple, Type, Union
+from typing import Dict, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 from urllib.error import HTTPError
 
 import pandas as pd
@@ -75,6 +75,7 @@ class ERDDAPCatalog(Catalog):
         self._entries: Dict[str, LocalCatalogEntry] = {}
         self._use_source_contraints = use_source_constraints
         self._protocol = protocol
+        self._dataset_metadata: Optional[Mapping[str, dict]] = None
         self.server = server
         self.search_url = None
 
@@ -119,6 +120,14 @@ class ERDDAPCatalog(Catalog):
         result = pd.concat(frames)
         result = result.drop_duplicates("datasetID")
         return result
+
+    def _load_metadata(self) -> Mapping[str, dict]:
+        """Returns all of the dataset metadata available from allDatasets API."""
+        if self._dataset_metadata is None:
+            self._dataset_metadata = utils.get_erddap_metadata(
+                self.server, self.kwargs_search
+            )
+        return self._dataset_metadata
 
     def get_search_urls(self) -> List[str]:
         """Return the search URLs used in generating the catalog."""
@@ -240,6 +249,7 @@ class ERDDAPCatalog(Catalog):
         dataidkey = "datasetID"
         e = self.get_client()
         df = self._load_df()
+        all_metadata = self._load_metadata()
 
         self._entries = {}
 
@@ -258,19 +268,21 @@ class ERDDAPCatalog(Catalog):
             if self._protocol == "tabledap":
                 args["constraints"].update(self._get_tabledap_constraints())
 
+            metadata = all_metadata.get(dataset_id, {})
+
             entry = LocalCatalogEntry(
                 name=dataset_id,
                 description=description,
                 driver=self._protocol,
                 args=args,
-                metadata={},
+                metadata=metadata,
                 getenv=False,
                 getshell=False,
             )
             if self._protocol == "tabledap":
-                entry._metadata = {
-                    "info_url": e.get_info_url(response="csv", dataset_id=dataset_id),
-                }
+                entry._metadata["info_url"] = e.get_info_url(
+                    response="csv", dataset_id=dataset_id
+                )
                 entry._plugin = [TableDAPSource]
             elif self._protocol == "griddap":
                 entry._plugin = [GridDAPSource]
