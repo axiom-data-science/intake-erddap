@@ -59,6 +59,9 @@ class ERDDAPCatalog(Catalog):
               Longitudes must be between -180 to +180.
             * to search within a datetime range: include both of min_time, max_time: interpretable
               datetime string, e.g., "2021-1-1"
+            * to search using a textual keyword: include `search_for` as either
+              a string or a list of strings. Multiple values will be searched
+              individually and combined in the final catalog results.
         category_search : list, tuple, optional
             Use this to narrow search by ERDDAP category. The syntax is `(category, key)`, e.g.
             ("standard_name", "temp"). `category` is the ERDDAP category for filtering results. Good
