@@ -4,9 +4,17 @@
 from unittest import mock
 from urllib.parse import parse_qsl, urlparse
 
+import numpy as np
 import pandas as pd
+import pytest
 
 from intake_erddap import utils
+
+
+class Something:
+    """An object that doesn't do anothing."""
+
+    pass
 
 
 def test_get_project_version():
@@ -95,3 +103,53 @@ def test_get_erddap_metadata(requests_mock):
         "minLatitude<": "42.02",
         "maxLatitude>": "40.4",
     }
+
+
+def test_bad_row_in_json():
+    column_names = [
+        "dataset_id",
+        "something",
+        "else",
+    ]
+    dtypes = ["String", "long", "float"]
+
+    row = ["blah", 1, 3.0]
+
+    entry = utils.parse_row(column_names, dtypes, row)
+    assert entry is not None
+    row = ["blah2", None, None]
+    entry = utils.parse_row(column_names, dtypes, row)
+    assert entry is None
+    row = ["blah2", 1, None]
+    entry = utils.parse_row(column_names, dtypes, row)
+    assert entry["dataset_id"] == "blah2"
+    assert entry["something"] == 1
+    assert np.isnan(entry["else"])
+
+    row = ["blah2", "not a", "number"]
+    with pytest.raises(ValueError):
+        utils.parse_row(column_names, dtypes, row)
+
+    row = ["blah2", Something(), "number"]
+    with pytest.raises(TypeError):
+        utils.parse_row(column_names, dtypes, row)
+
+
+def test_parser_error_response():
+
+    response_data = {
+        "table": {
+            "columnNames": ["datasetID", "silverhand", "alt"],
+            "columnTypes": ["String", "long", "double"],
+            "rows": [
+                ["allDatasets", None, None],
+                ["valid", 1, 3.0],
+                ["invalid", None, None],
+                ["valid_float", 1, None],
+                ["invalid_value", "long", "value"],
+                ["invalid_type", Something(), Something()],
+            ],
+        }
+    }
+    result = utils.parse_erddap_tabledap_response(response_data)
+    assert set(result.keys()) == set(["valid", "valid_float"])

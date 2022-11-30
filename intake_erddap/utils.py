@@ -2,13 +2,18 @@
 # -*- coding: utf-8 -*-
 """Utility functions."""
 
-from typing import Any, Dict, Mapping, Optional
+from logging import getLogger
+from typing import Any, Dict, List, Mapping, Optional
 from urllib.parse import quote_plus, urlencode
 
 import cf_pandas as cfp
+import numpy as np
 import pandas as pd
 
 from pandas import DataFrame
+
+
+log = getLogger("intake-erddap")
 
 
 def get_project_version() -> str:
@@ -126,19 +131,45 @@ def get_erddap_metadata(
 def parse_erddap_tabledap_response(data: dict) -> Mapping[str, dict]:
     """Convert table format into key value mapping."""
     results = {}
+    column_names = data["table"]["columnNames"]
+    dtypes = data["table"]["columnTypes"]
     for row in data["table"]["rows"]:
-        entry: Dict[str, Any] = {}
-        for i, key in enumerate(data["table"]["columnNames"]):
-            dtype = data["table"]["columnTypes"][i]
-            if dtype in ("double", "float"):
-                value = float(row[i])
-            elif dtype in ("long", "int"):
-                value = int(row[i])
-            else:
-                value = row[i]
-            entry[key] = value
-        results[entry["datasetID"]] = entry
+        try:
+            entry = parse_row(column_names, dtypes, row)
+        except TypeError:
+            log.warning("Encountered TypeError while parsing row from ERDDAP.")
+            log.debug(f"{row}")
+        except ValueError:
+            log.warning("Encountered ValueError while parsing row from ERDDAP.")
+            log.debug(f"{row}")
+        if entry is not None:
+            results[entry["datasetID"]] = entry
     return results
+
+
+def parse_row(
+    column_names: List[str], dtypes: List[str], row: List[Any]
+) -> Optional[Dict[str, Any]]:
+    """Parse a row of the ERDDAP Table JSON response."""
+    entry: Dict[str, Any] = {}
+    for i, key in enumerate(column_names):
+        dtype = dtypes[i]
+        if dtype in ("double", "float"):
+            if row[i] is None:
+                value = np.nan
+            else:
+                value = float(row[i])
+        elif dtype in ("long", "int"):
+            if row[i] is None:
+                log.warning(
+                    f"ERDDAP Returned an invalid null value for an integer. Skipping dataset {row[0]}"
+                )
+                return None
+            value = int(row[i])
+        else:
+            value = row[i]
+        entry[key] = value
+    return entry
 
 
 def map_constraints_to_tabledap(constraints: Mapping[str, Any]) -> dict:
