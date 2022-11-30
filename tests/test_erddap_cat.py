@@ -133,6 +133,14 @@ def test_ioos_erddap_catalog_and_source():
         assert cat_sensors[dataset_id].metadata["institution"] is not None
 
 
+@pytest.mark.integration
+def test_erddap_global_conneection():
+    ERDDAPCatalog(
+        "https://erddap.sensors.axds.co/erddap",
+        kwargs_search={"standard_name": "sea_water_temperature"},
+    )
+
+
 def test_invalid_kwarg_search():
     kw = {
         "min_lon": -180,
