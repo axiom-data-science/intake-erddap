@@ -71,7 +71,7 @@ class ERDDAPCatalog(Catalog):
             Currently only a single key can be matched at a time.
         use_source_constraints : bool, default True
             Any relevant search parameter defined in kwargs_search will be
-            passed to the source objects as contraints.
+            passed to the source objects as constraints.
         protocol : str, default "tabledap"
             One of the two supported ERDDAP Data Access Protocols: "griddap", or
             "tabledap". "tabledap" will present tabular datasets using pandas,
@@ -80,7 +80,7 @@ class ERDDAPCatalog(Catalog):
         """
         self._erddap_client = erddap_client or ERDDAP
         self._entries: Dict[str, LocalCatalogEntry] = {}
-        self._use_source_contraints = use_source_constraints
+        self._use_source_constraints = use_source_constraints
         self._protocol = protocol
         self._dataset_metadata: Optional[Mapping[str, dict]] = None
         self.server = server
@@ -300,8 +300,8 @@ class ERDDAPCatalog(Catalog):
     def _get_tabledap_constraints(self) -> Dict[str, Union[str, int, float]]:
         """Return the constraints dictionary for a tabledap source."""
         result = {}
-        if self._use_source_contraints and "min_time" in self.kwargs_search:
+        if self._use_source_constraints and "min_time" in self.kwargs_search:
             result["time>="] = self.kwargs_search["min_time"]
-        if self._use_source_contraints and "max_time" in self.kwargs_search:
+        if self._use_source_constraints and "max_time" in self.kwargs_search:
             result["time<="] = self.kwargs_search["max_time"]
         return result
