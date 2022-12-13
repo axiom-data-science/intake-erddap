@@ -134,6 +134,15 @@ def test_ioos_erddap_catalog_and_source():
 
 
 @pytest.mark.integration
+def test_ioos_default_init():
+    """Test that the default catalog initializes."""
+    cat_sensors = intake.open_erddap_cat(
+        server="https://erddap.sensors.ioos.us/erddap",
+    )
+    assert len(cat_sensors) > 0
+
+
+@pytest.mark.integration
 def test_erddap_global_conneection():
     ERDDAPCatalog(
         "https://erddap.sensors.axds.co/erddap",
