@@ -35,14 +35,67 @@ class ERDDAPCatalog(Catalog):
     """
     Makes data sources out of all datasets the given ERDDAP service
 
-    This uses erddapy to infer the datasets on the target server.
-    Of these, those which have at least one primary key column will become
-    ``ERDDAPSourceAutoPartition`` entries in this catalog.
+
+    Parameters
+    ----------
+    server : str
+        URL to the ERDDAP service. Example: ``"https://coastwatch.pfeg.noaa.gov/erddap"``
+
+        Note
+        ----
+        Do not include a trailing slash.
+    bbox : tuple of 4 floats, optional
+        For explicit geographic search queries, pass a tuple of four floats
+        in the `bbox` argument. The bounding box parameters are `(min_lon,
+        min_lat, max_lon, max_lat)`.
+    standard_names : list of str, optional
+        For explicit search queries for datasets containing a given
+        standard_name use this argument. Example: `["air_temperature",
+        "air_pressure"]`.
+    variable_names: list of str, optional
+        For explicit search queries for datasets containing a variable with
+        a given name. This can be useful when the client knows of a
+        particular variable name or a convention applied where there is no
+        CF standard name.
+    start_time : datetime, optional
+        For explicit search queries for datasets that contain data after
+        `start_time`.
+    end_time : datetime, optional
+        For explicit search queries for datasets that contain data before
+        `end_time`.
+    kwargs_search : dict, optional
+        Keyword arguments to input to search on the server before making the catalog. Options are:
+
+        - to search by bounding box: include all of min_lon, max_lon, min_lat, max_lat: (int, float)
+            Longitudes must be between -180 to +180.
+        - to search within a datetime range: include both of min_time, max_time: interpretable
+            datetime string, e.g., "2021-1-1"
+        - to search using a textual keyword: include `search_for` as either
+            a string or a list of strings. Multiple values will be searched
+            individually and combined in the final catalog results.
+    category_search : list, tuple, optional
+        Use this to narrow search by ERDDAP category. The syntax is `(category, key)`, e.g.
+        ("standard_name", "temp"). `category` is the ERDDAP category for filtering results. Good
+        choices for selecting variables are "standard_name" and "variableName". `key` is the
+        custom_criteria key to narrow the search by, which will be matched to the category results
+        using the custom_criteria that must be set up or input by the user, with `cf-pandas`.
+        Currently only a single key can be matched at a time.
+    use_source_constraints : bool, default True
+        Any relevant search parameter defined in kwargs_search will be
+        passed to the source objects as constraints.
+    protocol : str, default "tabledap"
+        One of the two supported ERDDAP Data Access Protocols: "griddap", or
+        "tabledap". "tabledap" will present tabular datasets using pandas,
+        meanwhile "griddap" will use xarray.
+    metadata : dict, optional
+        Extra metadata for the intake catalog.
 
     Attributes
     ----------
     search_url : str
         If a search is performed on the ERDDAP server, the search url is saved as an attribute.
+    server : str
+        The Base URL of the ERDDAP instance.
     """
 
     name = "erddap_cat"
@@ -66,58 +119,8 @@ class ERDDAPCatalog(Catalog):
         metadata: dict = None,
         **kwargs,
     ):
-        """ERDDAPCatalog initialization
-
-        Parameters
-        ----------
-        server : str
-            ERDDAP server address, for example: "http://erddap.sensors.ioos.us/erddap"
-        bbox : tuple of 4 floats, optional
-            For explicit geographic search queries, pass a tuple of four floats
-            in the `bbox` argument. The bounding box parameters are `(min_lon,
-            min_lat, max_lon, max_lat)`.
-        standard_names : list of str, optional
-            For explicit search queries for datasets containing a given
-            standard_name use this argument. Example: `["air_temperature",
-            "air_pressure"]`.
-        variable_names: list of str, optional
-            For explicit search queries for datasets containing a variable with
-            a given name. This can be useful when the client knows of a
-            particular variable name or a convention applied where there is no
-            CF standard name.
-        start_time : datetime, optional
-            For explicit search queries for datasets that contain data after
-            `start_time`.
-        end_time : datetime, optional
-            For explicit search queries for datasets that contain data before
-            `end_time`.
-        kwargs_search : dict, optional
-            Keyword arguments to input to search on the server before making the catalog. Options are:
-            * to search by bounding box: include all of min_lon, max_lon, min_lat, max_lat: (int, float)
-              Longitudes must be between -180 to +180.
-            * to search within a datetime range: include both of min_time, max_time: interpretable
-              datetime string, e.g., "2021-1-1"
-            * to search using a textual keyword: include `search_for` as either
-              a string or a list of strings. Multiple values will be searched
-              individually and combined in the final catalog results.
-        category_search : list, tuple, optional
-            Use this to narrow search by ERDDAP category. The syntax is `(category, key)`, e.g.
-            ("standard_name", "temp"). `category` is the ERDDAP category for filtering results. Good
-            choices for selecting variables are "standard_name" and "variableName". `key` is the
-            custom_criteria key to narrow the search by, which will be matched to the category results
-            using the custom_criteria that must be set up or input by the user, with `cf-pandas`.
-            Currently only a single key can be matched at a time.
-        use_source_constraints : bool, default True
-            Any relevant search parameter defined in kwargs_search will be
-            passed to the source objects as constraints.
-        protocol : str, default "tabledap"
-            One of the two supported ERDDAP Data Access Protocols: "griddap", or
-            "tabledap". "tabledap" will present tabular datasets using pandas,
-            meanwhile "griddap" will use xarray.
-        metadata : dict, optional
-            Extra metadata for the intake catalog.
-
-        """
+        if server.endswith("/"):
+            server = server[:-1]
         self._erddap_client = erddap_client or ERDDAP
         self._entries: Dict[str, LocalCatalogEntry] = {}
         self._use_source_constraints = use_source_constraints
