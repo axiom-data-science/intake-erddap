@@ -1,7 +1,19 @@
 """Catalog implementation for intake-erddap."""
 
+from copy import deepcopy
+from datetime import datetime
 from logging import getLogger
-from typing import Dict, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
+from typing import (
+    Dict,
+    List,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+)
 from urllib.error import HTTPError
 
 import pandas as pd
@@ -39,7 +51,14 @@ class ERDDAPCatalog(Catalog):
     def __init__(
         self,
         server: str,
-        kwargs_search: MutableMapping[str, Union[str, int, float]] = None,
+        bbox: Optional[Tuple[float, float, float, float]] = None,
+        standard_names: Optional[List[str]] = None,
+        variable_names: Optional[List[str]] = None,
+        start_time: Optional[Union[datetime, str]] = None,
+        end_time: Optional[Union[datetime, str]] = None,
+        kwargs_search: MutableMapping[
+            str, Union[str, int, float, Sequence[str]]
+        ] = None,
         category_search: Optional[Tuple[str, str]] = None,
         erddap_client: Optional[Type[ERDDAP]] = None,
         use_source_constraints: bool = True,
@@ -53,6 +72,25 @@ class ERDDAPCatalog(Catalog):
         ----------
         server : str
             ERDDAP server address, for example: "http://erddap.sensors.ioos.us/erddap"
+        bbox : tuple of 4 floats, optional
+            For explicit geographic search queries, pass a tuple of four floats
+            in the `bbox` argument. The bounding box parameters are `(min_lon,
+            min_lat, max_lon, max_lat)`.
+        standard_names : list of str, optional
+            For explicit search queries for datasets containing a given
+            standard_name use this argument. Example: `["air_temperature",
+            "air_pressure"]`.
+        variable_names: list of str, optional
+            For explicit search queries for datasets containing a variable with
+            a given name. This can be useful when the client knows of a
+            particular variable name or a convention applied where there is no
+            CF standard name.
+        start_time : datetime, optional
+            For explicit search queries for datasets that contain data after
+            `start_time`.
+        end_time : datetime, optional
+            For explicit search queries for datasets that contain data before
+            `end_time`.
         kwargs_search : dict, optional
             Keyword arguments to input to search on the server before making the catalog. Options are:
             * to search by bounding box: include all of min_lon, max_lon, min_lat, max_lat: (int, float)
@@ -100,7 +138,52 @@ class ERDDAPCatalog(Catalog):
                     )
         else:
             kwargs_search = {}
-        self.kwargs_search = kwargs_search
+        # Use deepcopy so we don't mangle objects passed in from clients
+        self.kwargs_search = deepcopy(kwargs_search)
+
+        if bbox is not None:
+            if not isinstance(bbox, tuple):
+                raise TypeError(
+                    f"Expecting a tuple of four floats for argument bbox: {type(bbox)}"
+                )
+            if len(bbox) != 4:
+                raise ValueError("bbox argument requires a tuple of four floats")
+            self.kwargs_search["min_lon"] = bbox[0]
+            self.kwargs_search["min_lat"] = bbox[1]
+            self.kwargs_search["max_lon"] = bbox[2]
+            self.kwargs_search["max_lat"] = bbox[3]
+
+        if standard_names is not None:
+            if not isinstance(standard_names, (list, tuple)):
+                raise TypeError(
+                    f"Expecting list of strings for standard_names argument: {repr(standard_names)}"
+                )
+            self.kwargs_search["standard_name"] = standard_names
+
+        if variable_names is not None:
+            if not isinstance(variable_names, (list, tuple)):
+                raise TypeError(
+                    f"Expecting list of strings for variable_names argument: {repr(variable_names)}"
+                )
+            self.kwargs_search["variableName"] = variable_names
+
+        if start_time is not None:
+            if not isinstance(start_time, (str, datetime)):
+                raise TypeError(
+                    f"Expecting a datetime for start_time argument: {repr(start_time)}"
+                )
+            if isinstance(start_time, str):
+                start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
+            self.kwargs_search["min_time"] = f"{start_time:%Y-%m-%dT%H:%M:%SZ}"
+
+        if end_time is not None:
+            if not isinstance(end_time, (str, datetime)):
+                raise TypeError(
+                    f"Expecting a datetime for end_time argument: {repr(end_time)}"
+                )
+            if isinstance(end_time, str):
+                end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
+            self.kwargs_search["max_time"] = f"{end_time:%Y-%m-%dT%H:%M:%SZ}"
 
         if category_search is not None:
             category, key = category_search
@@ -301,7 +384,11 @@ class ERDDAPCatalog(Catalog):
         """Return the constraints dictionary for a tabledap source."""
         result = {}
         if self._use_source_constraints and "min_time" in self.kwargs_search:
-            result["time>="] = self.kwargs_search["min_time"]
+            min_time = self.kwargs_search["min_time"]
+            if isinstance(min_time, (str, int, float)):
+                result["time>="] = min_time
         if self._use_source_constraints and "max_time" in self.kwargs_search:
-            result["time<="] = self.kwargs_search["max_time"]
+            max_time = self.kwargs_search["max_time"]
+            if isinstance(max_time, (str, int, float)):
+                result["time<="] = max_time
         return result

@@ -1,3 +1,6 @@
 erddapy
 intake
+intake-xarray
+numpy
 pandas
+xarray
