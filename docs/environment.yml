@@ -1,12 +1,40 @@
-name: intake
+name: docs
 channels:
-  - intake
-  - defaults
+  - conda-forge
+  - nodefaults
 dependencies:
-  - python=3.6
-  - intake
-  - intake-sql
-  - pip:
-    - sphinx
-    - sphinx-rtd-theme
-    - numpydoc
+   - python=3.9
+   # If your docs code examples depend on other packages add them here
+   - numpy
+   - dask
+   - pandas
+   - erddapy
+   - panel
+   - intake
+   - intake-xarray>=0.6.1
+   - cf_pandas
+   # These are needed for the docs themselves
+   - jupytext
+   - numpydoc
+   - sphinx
+   - sphinx-markdown-tables
+   - ipython
+   - jinja2
+   - nbconvert
+   - nbformat
+   - ipykernel
+   - pandoc
+   - pip
+   - recommonmark
+   - pip:
+     - git+https://github.com/intake/intake
+     - intake-parquet
+     - intake-xarray
+    #  - "dask[complete]"
+     - docrep<=0.2.7
+     - furo
+     - nbsphinx>=0.8.7
+     - jupyter_client
+     - myst-nb
+     - sphinx-copybutton
+     - sphinxcontrib-srclinks

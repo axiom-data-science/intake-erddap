@@ -450,3 +450,12 @@ def test_loading_metadata(
 
     cat = ERDDAPCatalog(server=SERVER_URL)
     assert cat["abc123"].metadata["institution"] == "FOMO"
+
+
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
+@mock.patch("pandas.read_csv")
+def test_trailing_slash(mock_read_csv, load_metadata_mock, single_dataset_catalog):
+    load_metadata_mock.return_value = {}
+    mock_read_csv.return_value = single_dataset_catalog
+    catalog = ERDDAPCatalog(server="http://blah.invalid/erddap/")
+    assert catalog.server == "http://blah.invalid/erddap"

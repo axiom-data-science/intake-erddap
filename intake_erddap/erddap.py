@@ -25,18 +25,31 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 class ERDDAPSource(base.DataSource):
     """
-    One-shot ERDDAP to dataframe reader (no partitioning)
-
-    Caches entire dataframe in memory.
+    ERDDAP Source (Base Class). This class represents the abstract base class
+    for an intake data source object for ERDDAP. Clients should use either
+    ``TableDAPSource`` or ``GridDAPSource``.
 
     Parameters
     ----------
-    server: str
-        URI to ERDDAP server
-    dataset_id: str
-    variables: list
-    constraints: dict
 
+    dataset_id : str
+        The unique datasetID value returned from ERDDAP.
+    protocol : str
+        Either `'griddap'` or `'tabledap'`.
+    variables : list of str
+    constraints : dict
+        The query constraints to apply to TableDAP requests.
+    metadata : dict
+    erddap_client : class, optional
+        The client object to use for connections to ERDDAP. Must conform to
+        the `erddapy.ERDDAP` interface.
+    http_client : class, optional
+        The client object to use for HTTP requests. Must conform to the
+        `requests` interface.
+
+    Note
+    ----
+    Caches entire dataframe in memory.
     """
 
     name = "erddap"
@@ -91,16 +104,18 @@ class TableDAPSource(ERDDAPSource):
     Parameters
     ----------
     server : str
-        URL to the ERDDAP service. Example:
-        "https://coastwatch.pfeg.noaa.gov/erddap" . Do not include a trailing
-        slash.
+        URL to the ERDDAP service. Example: ``"https://coastwatch.pfeg.noaa.gov/erddap"``
+
+        Note
+        ----
+        Do not include a trailing slash.
     dataset_id : str
         The dataset identifier from ERDDAP.
     variables : list of str, optional
         A list of variables to retrieve from the dataset.
     constraints : dict, optional
         A mapping of conditions and constraints. Example:
-        {"time>=": "2022-01-02T12:00:00Z", "lon>": -140, "lon<": 0}
+        ``{"time>=": "2022-01-02T12:00:00Z", "lon>": -140, "lon<": 0}``
     metadata : dict, optional
         Additional metadata to include with the source passed from the catalog.
     erddap_client : type, optional
@@ -232,9 +247,12 @@ class GridDAPSource(ERDDAPSource):
     Parameters
     ----------
     server : str
-        URL to the ERDDAP service. Example:
-        "https://coastwatch.pfeg.noaa.gov/erddap" . Do not include a trailing
-        slash.
+        URL to the ERDDAP service. Example: ``"https://coastwatch.pfeg.noaa.gov/erddap"``
+
+        Note
+        ----
+        Do not include a trailing slash.
+
     dataset_id : str
         The dataset identifier from ERDDAP.
     constraints : dict, optional
@@ -275,6 +293,16 @@ class GridDAPSource(ERDDAPSource):
     'coords': ('time', 'latitude', 'longitude'),
     'acknowledgement':
         ...
+
+    Warning
+    -------
+    The ``read()`` method will raise a ``NotImplemented`` exception because the
+    standard intake interface has the result read entirely into memory. For
+    gridded datasets this should not be allowed, reading the entire dataset into
+    memory can overwhelm the server, get the client blacklisted, and potentially
+    crash the client by exhausting available system memory. If a client truly
+    wants to load the entire dataset into memory, the client can invoke the
+    method ``ds.load()`` on the Dataset object.
     """
 
     name = "griddap"
