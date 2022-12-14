@@ -114,6 +114,8 @@ class ERDDAPCatalog(Catalog):
             One of the two supported ERDDAP Data Access Protocols: "griddap", or
             "tabledap". "tabledap" will present tabular datasets using pandas,
             meanwhile "griddap" will use xarray.
+        metadata : dict, optional
+            Extra metadata for the intake catalog.
 
         """
         self._erddap_client = erddap_client or ERDDAP
@@ -192,7 +194,10 @@ class ERDDAPCatalog(Catalog):
                 self.server, key, category
             )[0]
 
-        super(ERDDAPCatalog, self).__init__(**kwargs)
+        metadata = metadata or {}
+        metadata["kwargs_search"] = self.kwargs_search
+
+        super(ERDDAPCatalog, self).__init__(metadata=metadata, **kwargs)
 
     def _load_df(self) -> pd.DataFrame:
         frames = []
