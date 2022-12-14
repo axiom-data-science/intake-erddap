@@ -2,6 +2,7 @@
 """Unit tests."""
 import os
 
+from datetime import datetime
 from tempfile import mkstemp
 from unittest import mock
 from urllib.error import HTTPError
@@ -9,6 +10,7 @@ from urllib.parse import parse_qsl, urlparse
 
 import cf_pandas
 import intake
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -298,6 +300,75 @@ def test_catalog_get_search_urls_by_category(
     catalog = ERDDAPCatalog(server=SERVER_URL, kwargs_search=kwargs_search)
     search_urls = catalog.get_search_urls()
     assert len(search_urls) == 6
+
+
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
+@mock.patch("pandas.read_csv")
+def test_catalog_bbox(mock_read_csv, load_metadata_mock, single_dataset_catalog):
+    load_metadata_mock.return_value = {}
+    mock_read_csv.return_value = single_dataset_catalog
+    catalog = ERDDAPCatalog(server=SERVER_URL, bbox=(-120.0, 30.0, -100.0, 48.0))
+    assert catalog.kwargs_search["min_lon"] == -120.0
+    assert catalog.kwargs_search["max_lon"] == -100.0
+    assert catalog.kwargs_search["min_lat"] == 30.0
+    assert catalog.kwargs_search["max_lat"] == 48.0
+
+    with pytest.raises(TypeError):
+        ERDDAPCatalog(server=SERVER_URL, bbox=[0, 0, 1, 1])
+    with pytest.raises(ValueError):
+        ERDDAPCatalog(server=SERVER_URL, bbox=(0, 0))
+
+
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
+@mock.patch("pandas.read_csv")
+def test_catalog_standard_names_arg(
+    mock_read_csv, load_metadata_mock, single_dataset_catalog
+):
+    load_metadata_mock.return_value = {}
+    mock_read_csv.return_value = single_dataset_catalog
+    catalog = ERDDAPCatalog(
+        server=SERVER_URL, standard_names=["air_temperature", "air_pressure"]
+    )
+    assert catalog.kwargs_search["standard_name"] == ["air_temperature", "air_pressure"]
+
+    with pytest.raises(TypeError):
+        ERDDAPCatalog(server=SERVER_URL, standard_names="air_temperature")
+
+
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
+@mock.patch("pandas.read_csv")
+def test_catalog_variable_names_arg(
+    mock_read_csv, load_metadata_mock, single_dataset_catalog
+):
+    load_metadata_mock.return_value = {}
+    mock_read_csv.return_value = single_dataset_catalog
+    catalog = ERDDAPCatalog(server=SERVER_URL, variable_names=["airTemp", "Pair"])
+    assert catalog.kwargs_search["variableName"] == ["airTemp", "Pair"]
+
+    with pytest.raises(TypeError):
+        ERDDAPCatalog(server=SERVER_URL, variable_names="air_temperature")
+
+
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
+@mock.patch("pandas.read_csv")
+def test_catalog_times_arg(mock_read_csv, load_metadata_mock, single_dataset_catalog):
+    load_metadata_mock.return_value = {}
+    mock_read_csv.return_value = single_dataset_catalog
+    catalog = ERDDAPCatalog(
+        server=SERVER_URL,
+        start_time=datetime(2022, 1, 1),
+        end_time=datetime(2022, 12, 1),
+    )
+    assert catalog.kwargs_search["min_time"] == "2022-01-01T00:00:00Z"
+    assert catalog.kwargs_search["max_time"] == "2022-12-01T00:00:00Z"
+    with pytest.raises(ValueError):
+        ERDDAPCatalog(server=SERVER_URL, start_time="2022-1-1")
+    with pytest.raises(ValueError):
+        ERDDAPCatalog(server=SERVER_URL, end_time="2022-1-1")
+    with pytest.raises(TypeError):
+        ERDDAPCatalog(server=SERVER_URL, start_time=np.datetime64("2022-01-01"))
+    with pytest.raises(TypeError):
+        ERDDAPCatalog(server=SERVER_URL, end_time=np.datetime64("2022-01-01"))
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
