@@ -1,12 +1,9 @@
-:mod:`API`
-----------------------------
 
 ``intake-erddap`` Python API
 =============================
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
    :caption: Documentation
 
 
@@ -15,7 +12,7 @@
 
 
 .. autoclass:: intake_erddap.erddap_cat.ERDDAPCatalog
-   :members: __init__, get_client, get_search_urls
+   :members: get_client, get_search_urls
 
 ``intake-erddap`` source
 ------------------------
