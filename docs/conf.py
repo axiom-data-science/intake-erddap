@@ -56,11 +56,11 @@ extensions = [
     "sphinx.ext.extlinks",
     "sphinx.ext.intersphinx",
     "numpydoc",
-    "IPython.sphinxext.ipython_directive",
-    "IPython.sphinxext.ipython_console_highlighting",
+    #"IPython.sphinxext.ipython_directive",
+    #"IPython.sphinxext.ipython_console_highlighting",
     "sphinxcontrib.srclinks",
     "sphinx_markdown_tables",
-    "myst_nb",
+    #"myst_nb",
 ]
 
 # for compiling notebooks with mystnb
