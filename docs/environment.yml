@@ -24,6 +24,8 @@ dependencies:
    - nbformat
    - ipykernel
    - pandoc
+   # Needed for the maps in the docs
+   - cartopy
    - pip
    - recommonmark
    - pip:

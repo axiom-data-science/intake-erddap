@@ -1,6 +1,11 @@
 Examples
 ========
 
+.. toctree::
+   :maxdepth: 2
+
+   notebooks/Wave Data Demo.ipynb
+
 Querying
 --------
 
