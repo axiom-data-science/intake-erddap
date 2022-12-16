@@ -373,6 +373,20 @@ def test_catalog_times_arg(mock_read_csv, load_metadata_mock, single_dataset_cat
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
 @mock.patch("pandas.read_csv")
+def test_catalog_search_for_arg(
+    mock_read_csv, load_metadata_mock, single_dataset_catalog
+):
+    load_metadata_mock.return_value = {}
+    mock_read_csv.return_value = single_dataset_catalog
+    catalog = ERDDAPCatalog(server=SERVER_URL, search_for=["ioos", "aoos"])
+    assert catalog.kwargs_search["search_for"] == ["ioos", "aoos"]
+
+    with pytest.raises(TypeError):
+        ERDDAPCatalog(server=SERVER_URL, search_for="aoos")
+
+
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
+@mock.patch("pandas.read_csv")
 def test_catalog_query_search_for(
     mock_read_csv, load_metadata_mock, single_dataset_catalog
 ):

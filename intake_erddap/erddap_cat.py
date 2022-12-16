@@ -63,6 +63,9 @@ class ERDDAPCatalog(Catalog):
     end_time : datetime, optional
         For explicit search queries for datasets that contain data before
         `end_time`.
+    search_for : list of str, optional
+        For explicit search queries for datasets that any contain of the terms
+        specified in this keyword argument.
     kwargs_search : dict, optional
         Keyword arguments to input to search on the server before making the catalog. Options are:
 
@@ -109,6 +112,7 @@ class ERDDAPCatalog(Catalog):
         variable_names: Optional[List[str]] = None,
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
+        search_for: Optional[List[str]] = None,
         kwargs_search: MutableMapping[
             str, Union[str, int, float, Sequence[str]]
         ] = None,
@@ -189,6 +193,13 @@ class ERDDAPCatalog(Catalog):
             if isinstance(end_time, str):
                 end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
             self.kwargs_search["max_time"] = f"{end_time:%Y-%m-%dT%H:%M:%SZ}"
+
+        if search_for is not None:
+            if not isinstance(search_for, (list, tuple)):
+                raise TypeError(
+                    f"Expecting list of strings for search_for argument: {repr(standard_names)}"
+                )
+            self.kwargs_search["search_for"] = search_for
 
         if category_search is not None:
             category, key = category_search
