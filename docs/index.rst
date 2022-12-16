@@ -9,6 +9,7 @@ Welcome to intake-erddap's documentation!
 .. toctree::
    :maxdepth: 2
 
+   examples
    API <api>
    GitHub repository <https://github.com/axiom-data-science/intake-axds>
 
