@@ -3,10 +3,10 @@ _forked from [https://github.com/jmunroe/intake-erddap](https://github.com/jmunr
 Intake-ERDDAP
 =============
 
-[![Build Status](https://img.shields.io/github/workflow/status/axiom-data-science/intake-erddap/Tests?logo=github&style=for-the-badge)](https://github.com/axiom-data-science/intake-erddap/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/axiom-data-science/intake-erddap/test.yaml?branch=main&logo=github&style=for-the-badge)](https://github.com/axiom-data-science/intake-erddap/actions/workflows/test.yaml)
 [![Code Coverage](https://img.shields.io/codecov/c/github/axiom-data-science/intake-erddap.svg?style=for-the-badge)](https://codecov.io/gh/axiom-data-science/intake-erddap)
 [![License:BSD](https://img.shields.io/badge/License-BSD--2%20Clause-blue.svg?style=for-the-badge)](https://opensource.org/licenses/BSD-2-Clause)
-[![Code Style Status](https://img.shields.io/github/workflow/status/axiom-data-science/intake-erddap/linting%20with%20pre-commit?label=Code%20Style&style=for-the-badge)](https://github.com/axiom-data-science/intake-erddap/actions)
+[![Code Style Status](https://img.shields.io/github/actions/workflow/status/axiom-data-science/intake-erddap/linting.yaml?branch=main&label=Code%20Style&style=for-the-badge)](https://github.com/axiom-data-science/intake-erddap/actions/workflows/linting.yaml)
 [![Python Package Index](https://img.shields.io/pypi/v/intake-erddap.svg?style=for-the-badge)](https://pypi.org/project/intake-erddap)
 
 
