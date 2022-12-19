@@ -77,3 +77,20 @@ containing a plaintext search term::
         server=server_url,
         search_for=["ioos", "aoos", "NOAA"],
     )
+
+
+Querying with AND
+-----------------
+
+Sometimes, clients may want to find only datasets that match all of the query
+terms exactly. This can be achieved with the ``query_type`` keyword argument::
+
+
+    cat = intake.open_erddap_catalog(
+        server=server_url,
+        standard_names=["air_temperature", "air_pressure"],
+        query_type="intersection",
+    )
+
+This will return only datasets that have both ``air_temperature`` and
+``air_pressure`` as standard names associated with variables.

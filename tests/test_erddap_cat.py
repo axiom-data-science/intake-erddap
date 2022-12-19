@@ -473,3 +473,67 @@ def test_trailing_slash(mock_read_csv, load_metadata_mock, single_dataset_catalo
     mock_read_csv.return_value = single_dataset_catalog
     catalog = ERDDAPCatalog(server="http://blah.invalid/erddap/")
     assert catalog.server == "http://blah.invalid/erddap"
+
+
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
+@mock.patch("pandas.read_csv")
+def test_catalog_query_type_intersection(mock_read_csv, load_metadata_mock):
+    data = [
+        {
+            "datasetID": "ab001",
+            "title": "Example dataset",
+        },
+        {
+            "datasetID": "ab002",
+            "title": "Example dataset",
+        },
+        {
+            "datasetID": "ab003",
+            "title": "Example dataset",
+        },
+        {
+            "datasetID": "ab004",
+            "title": "Example dataset",
+        },
+        {
+            "datasetID": "ab005",
+            "title": "Example dataset",
+        },
+        {
+            "datasetID": "ab006",
+            "title": "Example dataset",
+        },
+        {
+            "datasetID": "ab007",
+            "title": "Example dataset",
+        },
+        {
+            "datasetID": "ab008",
+            "title": "Example dataset",
+        },
+    ]
+
+    big_df = pd.DataFrame(data)
+    sub_df1 = big_df
+    sub_df2 = big_df[:4]
+    sub_df3 = big_df[2:7]
+
+    # mock 3 calls
+    mock_read_csv.side_effect = [sub_df1, sub_df2, sub_df3]
+    catalog = ERDDAPCatalog(
+        server=SERVER_URL,
+        standard_names=["air_pressure", "air_temperature"],
+        variable_names=["sigma"],
+        query_type="intersection",
+    )
+    search_urls = catalog.get_search_urls()
+    assert len(search_urls) == 3
+
+
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
+@mock.patch("pandas.read_csv")
+def test_query_type_invalid(mock_read_csv, load_metadata_mock, single_dataset_catalog):
+    load_metadata_mock.return_value = {}
+    mock_read_csv.return_value = single_dataset_catalog
+    with pytest.raises(ValueError):
+        ERDDAPCatalog(server="http://blah.invalid/erddap/", query_type="blah")

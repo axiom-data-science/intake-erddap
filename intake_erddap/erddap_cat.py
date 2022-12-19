@@ -92,6 +92,13 @@ class ERDDAPCatalog(Catalog):
         meanwhile "griddap" will use xarray.
     metadata : dict, optional
         Extra metadata for the intake catalog.
+    query_type : str, default "union"
+        Specifies how the catalog should apply the query parameters. Choices are
+        ``"union"`` or ``"intersection"``. If the ``query_type`` is set to
+        ``"intersection"``, then the set of results will be the intersection of
+        each individual query made to ERDDAP. This is equivalent to a logical
+        AND of the results. If the value is ``"union"`` then the results will be
+        the union of each resulting dataset. This is equivalent to a logical OR.
 
     Attributes
     ----------
@@ -121,6 +128,7 @@ class ERDDAPCatalog(Catalog):
         use_source_constraints: bool = True,
         protocol: str = "tabledap",
         metadata: dict = None,
+        query_type: str = "union",
         **kwargs,
     ):
         if server.endswith("/"):
@@ -130,6 +138,7 @@ class ERDDAPCatalog(Catalog):
         self._use_source_constraints = use_source_constraints
         self._protocol = protocol
         self._dataset_metadata: Optional[Mapping[str, dict]] = None
+        self._query_type = query_type
         self.server = server
         self.search_url = None
 
@@ -197,7 +206,7 @@ class ERDDAPCatalog(Catalog):
         if search_for is not None:
             if not isinstance(search_for, (list, tuple)):
                 raise TypeError(
-                    f"Expecting list of strings for search_for argument: {repr(standard_names)}"
+                    f"Expecting list of strings for search_for argument: {repr(search_for)}"
                 )
             self.kwargs_search["search_for"] = search_for
 
@@ -225,9 +234,20 @@ class ERDDAPCatalog(Catalog):
                 raise
             df.rename(columns={"Dataset ID": "datasetID"}, inplace=True)
             frames.append(df)
-        result = pd.concat(frames)
-        result = result.drop_duplicates("datasetID")
-        return result
+        if self._query_type == "union":
+            result = pd.concat(frames)
+            result = result.drop_duplicates("datasetID")
+            return result
+        elif self._query_type == "intersection":
+            result = None
+            for frame in frames:
+                if result is None:
+                    result = frame
+                else:
+                    result = result.merge(frame, how="inner", on="datasetID")
+            return result
+        else:
+            raise ValueError(f"_query_type is unexpected value: {self._query_type}")
 
     def _load_metadata(self) -> Mapping[str, dict]:
         """Returns all of the dataset metadata available from allDatasets API."""
@@ -335,6 +355,7 @@ class ERDDAPCatalog(Catalog):
             params = self.kwargs_search.copy()
             params.pop("standard_name", None)
             params.pop("variableName", None)
+            # query is passed directly in method invocation below
             params.pop("search_for", None)
 
             search_url = e.get_search_url(
