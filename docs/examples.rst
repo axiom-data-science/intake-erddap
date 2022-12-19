@@ -4,7 +4,7 @@ Examples
 .. toctree::
    :maxdepth: 2
 
-   notebooks/Wave Data Demo.ipynb
+   examples/wave-height.md
 
 Querying
 --------

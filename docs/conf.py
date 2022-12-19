@@ -49,7 +49,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
-    # "nbsphinx",
+    #"nbsphinx",
     "recommonmark",
     "sphinx.ext.mathjax",
     "sphinx.ext.autosummary",
@@ -85,7 +85,7 @@ exclude_patterns = ["_build", "**.ipynb_checkpoints", "Thumbs.db", ".DS_Store"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "furo"
+#html_theme = "furo"
 
 # furo variables
 html_title = "intake-axds documentation"
@@ -99,3 +99,5 @@ html_static_path = ["_static"]
 # -- nbsphinx specific options ----------------------------------------------
 # this allows notebooks to be run even if they produce errors.
 nbsphinx_allow_errors = True
+
+nbsphinx_kernel_name = "python3"
