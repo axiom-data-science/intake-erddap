@@ -49,25 +49,27 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
-    # "nbsphinx",
+    #"nbsphinx",
     "recommonmark",
     "sphinx.ext.mathjax",
     "sphinx.ext.autosummary",
     "sphinx.ext.extlinks",
     "sphinx.ext.intersphinx",
     "numpydoc",
-    #"IPython.sphinxext.ipython_directive",
-    #"IPython.sphinxext.ipython_console_highlighting",
+    "IPython.sphinxext.ipython_directive",
+    "IPython.sphinxext.ipython_console_highlighting",
     "sphinxcontrib.srclinks",
     "sphinx_markdown_tables",
-    #"myst_nb",
+    "myst_nb",
 ]
 
 # for compiling notebooks with mystnb
 # https://docs.readthedocs.io/en/stable/guides/jupyter.html#using-notebooks-in-other-formats
-#nb_custom_formats = {
-#    ".md": ["jupytext.reads", {"fmt": "mystnb"}],
-#}
+nb_custom_formats = {
+    ".md": ["jupytext.reads", {"fmt": "mystnb"}],
+}
+
+nb_execution_timeout = 120
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -83,7 +85,7 @@ exclude_patterns = ["_build", "**.ipynb_checkpoints", "Thumbs.db", ".DS_Store"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "furo"
+#html_theme = "furo"
 
 # furo variables
 html_title = "intake-axds documentation"
@@ -97,3 +99,5 @@ html_static_path = ["_static"]
 # -- nbsphinx specific options ----------------------------------------------
 # this allows notebooks to be run even if they produce errors.
 nbsphinx_allow_errors = True
+
+nbsphinx_kernel_name = "python3"

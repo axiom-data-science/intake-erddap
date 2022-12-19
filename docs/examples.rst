@@ -1,6 +1,11 @@
 Examples
 ========
 
+.. toctree::
+   :maxdepth: 2
+
+   examples/wave-height.md
+
 Querying
 --------
 
