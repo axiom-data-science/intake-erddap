@@ -63,10 +63,10 @@ Requirements
 Installation
 ------------
 
-In the very near future, we will be offering the project on conda and PyPI. In
-the meantime the project can be installed from github using pip::
+In the very near future, we will be offering the project on conda. Currently the
+project is available on PyPI, so it can be installed using ``pip``::
 
-    pip install -e 'git+https://github.com/axiom-data-science/intake-erddap/@master#egg=intake-erddap'
+    pip install intake-erddap
 
 
 Examples
