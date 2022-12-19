@@ -25,7 +25,7 @@ science projects. Intake ERDDAP provides a set of integrations for ERDDAP.
 - Get an xarray Dataset for the Gridded datasets.
 
 
-.. image:: https://img.shields.io/github/workflow/status/axiom-data-science/intake-erddap/Tests?logo=github&style=for-the-badge
+.. image:: https://img.shields.io/github/actions/workflow/status/axiom-data-science/intake-erddap/test.yaml?branch=main&logo=github&style=for-the-badge
     :alt: Build Status
 
 .. image:: https://img.shields.io/codecov/c/github/axiom-data-science/intake-erddap.svg?style=for-the-badge
@@ -34,7 +34,7 @@ science projects. Intake ERDDAP provides a set of integrations for ERDDAP.
 .. image:: https://img.shields.io/badge/License-BSD--2%20Clause-blue.svg?style=for-the-badge
     :alt: License:BSD
 
-.. image:: https://img.shields.io/github/workflow/status/axiom-data-science/intake-erddap/linting%20with%20pre-commit?label=Code%20Style&style=for-the-badge
+.. image:: https://img.shields.io/github/actions/workflow/status/axiom-data-science/intake-erddap/linting.yaml?branch=main&label=Code%20Style&style=for-the-badge
     :alt: Code Style Status
 
 The project is available on `Github <https://github.com/axiom-data-science/intake-erddap/>`_.
