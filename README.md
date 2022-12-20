@@ -17,6 +17,11 @@ For changes prior to 2022-10-19, all contributions are Copyright James Munroe, s
 [![Code Style Status](https://img.shields.io/github/actions/workflow/status/axiom-data-science/intake-erddap/linting.yaml?branch=main&label=Code%20Style&style=for-the-badge)](https://github.com/axiom-data-science/intake-erddap/actions/workflows/linting.yaml)
 [![Python Package Index](https://img.shields.io/pypi/v/intake-erddap.svg?style=for-the-badge)](https://pypi.org/project/intake-erddap)
 
+[![Read The Docs](https://readthedocs.org/projects/intake-erddap/badge/?version=latest&style=for-the-badge)](https://intake-erddap.readthedocs.io)
+
+
+[Check out our Read The Docs page for additional documentation](https://intake-erddap.readthedocs.io)
+
 
 
 Intake is a lightweight set of tools for loading and sharing data in data
