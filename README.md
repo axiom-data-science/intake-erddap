@@ -83,36 +83,44 @@ Note: if `mamba` isn't installed, replace all instances of `mamba` in the follow
 
 To create an intake catalog for all of the ERDDAP's TableDAP offerings use:
 
-    import intake
-    catalog = intake.open_erddap_cat(
-        server="https://erddap.sensors.ioos.us/erddap"
-    )
+```python
+import intake
+catalog = intake.open_erddap_cat(
+   server="https://erddap.sensors.ioos.us/erddap"
+)
+```
 
 
 The catalog objects behave like a dictionary with the keys representing the
 dataset's unique identifier within ERDDAP, and the values being the
 `TableDAPSource` objects. To access a source object:
 
-    source = catalog["datasetid"]
+```python
+source = catalog["datasetid"]
+```
 
 From the source object, a pandas DataFrame can be retrieved:
 
-    df = source.read()
+```python
+df = source.read()
+```
 
 Consider a case where you need to find all wind data near Florida:
 
-    import intake
-    from datetime import datetime
-    bbox = (-87.84, 24.05, -77.11, 31.27)
-    catalog = intake.open_erddap_cat(
-        server="https://erddap.sensors.ioos.us/erddap",
-        bbox=bbox,
-        start_time=datetime(2022, 1, 1),
-        end_time=datetime(2023, 1, 1),
-        standard_names=["wind_speed", "wind_from_direction"],
-    )
+```python
+import intake
+from datetime import datetime
+bbox = (-87.84, 24.05, -77.11, 31.27)
+catalog = intake.open_erddap_cat(
+   server="https://erddap.sensors.ioos.us/erddap",
+   bbox=bbox,
+   start_time=datetime(2022, 1, 1),
+   end_time=datetime(2023, 1, 1),
+   standard_names=["wind_speed", "wind_from_direction"],
+)
 
-    df = next(catalog.values()).read()
+df = next(catalog.values()).read()
+```
 
 
 <table class="align-default">
