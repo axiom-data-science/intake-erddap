@@ -48,7 +48,7 @@ def temporary_catalog():
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_erddap_catalog(mock_read_csv, load_metadata_mock):
     """Test basic catalog API."""
     load_metadata_mock.return_value = {}
@@ -60,7 +60,7 @@ def test_erddap_catalog(mock_read_csv, load_metadata_mock):
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_erddap_catalog_searching(mock_read_csv, load_metadata_mock):
     """Test catalog with search parameters."""
     load_metadata_mock.return_value = {}
@@ -80,12 +80,12 @@ def test_erddap_catalog_searching(mock_read_csv, load_metadata_mock):
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_erddap_catalog_searching_variable(mock_read_csv, load_metadata_mock):
     load_metadata_mock.return_value = {}
     df1 = pd.DataFrame()
     df1["Category"] = ["sea_water_temperature"]
-    df1["URL"] = ["http://blah.com"]
+    df1["URL"] = ["http://blah.invalid"]
     df2 = pd.DataFrame()
     df2["Dataset ID"] = ["testID"]
     # pd.read_csv is called twice, so two return results
@@ -177,7 +177,7 @@ def test_invalid_kwarg_search():
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_catalog_uses_di_client(
     mock_read_csv, load_metadata_mock, single_dataset_catalog
 ):
@@ -191,7 +191,7 @@ def test_catalog_uses_di_client(
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_catalog_skips_all_datasets_row(mock_read_csv, load_metadata_mock):
     load_metadata_mock.return_value = {}
     """Tests that the catalog results ignore allDatasets special dataset."""
@@ -203,7 +203,7 @@ def test_catalog_skips_all_datasets_row(mock_read_csv, load_metadata_mock):
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_params_search(mock_read_csv, load_metadata_mock):
     load_metadata_mock.return_value = {}
     df = pd.DataFrame()
@@ -232,7 +232,7 @@ def test_params_search(mock_read_csv, load_metadata_mock):
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_constraints_present_in_source(
     mock_read_csv, load_metadata_mock, single_dataset_catalog
 ):
@@ -255,7 +255,7 @@ def test_constraints_present_in_source(
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_catalog_with_griddap(
     mock_read_csv, load_metadata_mock, single_dataset_catalog
 ):
@@ -271,7 +271,7 @@ def test_catalog_with_griddap(
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_catalog_with_unsupported_protocol(
     mock_read_csv, load_metadata_mock, single_dataset_catalog
 ):
@@ -286,7 +286,7 @@ def test_catalog_with_unsupported_protocol(
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_catalog_get_search_urls_by_category(
     mock_read_csv, load_metadata_mock, single_dataset_catalog
 ):
@@ -303,7 +303,7 @@ def test_catalog_get_search_urls_by_category(
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_catalog_bbox(mock_read_csv, load_metadata_mock, single_dataset_catalog):
     load_metadata_mock.return_value = {}
     mock_read_csv.return_value = single_dataset_catalog
@@ -320,7 +320,7 @@ def test_catalog_bbox(mock_read_csv, load_metadata_mock, single_dataset_catalog)
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_catalog_standard_names_arg(
     mock_read_csv, load_metadata_mock, single_dataset_catalog
 ):
@@ -336,7 +336,7 @@ def test_catalog_standard_names_arg(
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_catalog_variable_names_arg(
     mock_read_csv, load_metadata_mock, single_dataset_catalog
 ):
@@ -350,7 +350,7 @@ def test_catalog_variable_names_arg(
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_catalog_times_arg(mock_read_csv, load_metadata_mock, single_dataset_catalog):
     load_metadata_mock.return_value = {}
     mock_read_csv.return_value = single_dataset_catalog
@@ -372,7 +372,7 @@ def test_catalog_times_arg(mock_read_csv, load_metadata_mock, single_dataset_cat
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_catalog_search_for_arg(
     mock_read_csv, load_metadata_mock, single_dataset_catalog
 ):
@@ -386,7 +386,7 @@ def test_catalog_search_for_arg(
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_catalog_query_search_for(
     mock_read_csv, load_metadata_mock, single_dataset_catalog
 ):
@@ -409,7 +409,7 @@ def test_catalog_query_search_for(
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_search_returns_404(mock_read_csv, load_metadata_mock):
     load_metadata_mock.return_value = {}
     mock_read_csv.side_effect = HTTPError(
@@ -425,7 +425,7 @@ def test_search_returns_404(mock_read_csv, load_metadata_mock):
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_saving_catalog(
     mock_read_csv, load_metadata_mock, single_dataset_catalog, temporary_catalog
 ):
@@ -453,7 +453,7 @@ def test_saving_catalog(
 
 
 @mock.patch("intake_erddap.utils.get_erddap_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_loading_metadata(
     mock_read_csv, mock_get_erddap_metadata, single_dataset_catalog
 ):
@@ -467,7 +467,7 @@ def test_loading_metadata(
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_trailing_slash(mock_read_csv, load_metadata_mock, single_dataset_catalog):
     load_metadata_mock.return_value = {}
     mock_read_csv.return_value = single_dataset_catalog
@@ -476,7 +476,7 @@ def test_trailing_slash(mock_read_csv, load_metadata_mock, single_dataset_catalo
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_catalog_query_type_intersection(mock_read_csv, load_metadata_mock):
     data = [
         {
@@ -531,7 +531,7 @@ def test_catalog_query_type_intersection(mock_read_csv, load_metadata_mock):
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
-@mock.patch("pandas.read_csv")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
 def test_query_type_invalid(mock_read_csv, load_metadata_mock, single_dataset_catalog):
     load_metadata_mock.return_value = {}
     mock_read_csv.return_value = single_dataset_catalog
