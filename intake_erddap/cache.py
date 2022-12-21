@@ -63,12 +63,8 @@ class CacheStore:
         allowed_mtime = now - self.cache_period
         if pth.exists():
             if pth.stat().st_mtime < allowed_mtime:
-                print("Cache MISS")
                 self.cache_response(url, **http_kwargs)
-            else:
-                print("Cache HIT")
         else:
-            print("Cache MISS")
             self.cache_response(url, **http_kwargs)
 
         with gzip.open(pth) as f:
@@ -82,12 +78,8 @@ class CacheStore:
         allowed_mtime = now - self.cache_period
         if pth.exists():
             if pth.stat().st_mtime < allowed_mtime:
-                print("Cache MISS")
                 self.cache_response(url, **http_kwargs)
-            else:
-                print("Cache HIT")
         else:
-            print("Cache MISS")
             self.cache_response(url, **http_kwargs)
 
         with gzip.open(pth) as f:
