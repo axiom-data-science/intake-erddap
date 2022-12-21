@@ -1,15 +1,17 @@
 #!/usr/bin/env pytest
 """Unit tests for caching support."""
-import time
 import gzip
-from pathlib import Path
-import hashlib
-from unittest import mock
-from intake_erddap import cache
-import pytest
-import tempfile
-import shutil
 import os
+import shutil
+import tempfile
+import time
+
+from pathlib import Path
+from unittest import mock
+
+import pytest
+
+from intake_erddap import cache
 
 
 @pytest.fixture
@@ -20,29 +22,29 @@ def tempdir():
         shutil.rmtree(tempdir)
 
 
-@mock.patch('appdirs.user_cache_dir')
+@mock.patch("appdirs.user_cache_dir")
 def test_cache_file(user_cache_dir_mock, tempdir):
     user_cache_dir_mock.return_value = tempdir
     url = "http://kevinbacon.invalid/erddap/advanced?blahbah"
     store = cache.CacheStore()
-    filepath = store.cache_file(url) 
+    filepath = store.cache_file(url)
     assert filepath.parent == Path(tempdir)
     sha = cache.CacheStore.hash_url(url)
-    assert filepath.name == f'{sha}.gz'
+    assert filepath.name == f"{sha}.gz"
 
 
-@mock.patch('requests.get')
-@mock.patch('appdirs.user_cache_dir')
+@mock.patch("requests.get")
+@mock.patch("appdirs.user_cache_dir")
 def test_cache_csv(user_cache_dir_mock, http_get_mock, tempdir):
     user_cache_dir_mock.return_value = tempdir
     resp = mock.Mock()
-    resp.content = b'blahblah'
+    resp.content = b"blahblah"
     http_get_mock.return_value = resp
     url = "http://kevinbacon.invalid/erddap/advanced?blahbah"
     store = cache.CacheStore()
     store.cache_response(url)
     sha = store.hash_url(url)
-    target = (Path(tempdir) / f'{sha}.gz') 
+    target = Path(tempdir) / f"{sha}.gz"
     assert target.exists()
     assert http_get_mock.called_with(url)
     with gzip.open(target, "rt", encoding="utf-8") as f:
@@ -50,18 +52,18 @@ def test_cache_csv(user_cache_dir_mock, http_get_mock, tempdir):
         assert buf == "blahblah"
 
 
-@mock.patch('requests.get')
-@mock.patch('appdirs.user_cache_dir')
+@mock.patch("requests.get")
+@mock.patch("appdirs.user_cache_dir")
 def test_clearing_cache(user_cache_dir_mock, http_get_mock, tempdir):
     user_cache_dir_mock.return_value = tempdir
     resp = mock.Mock()
-    resp.content = b'blahblah'
+    resp.content = b"blahblah"
     http_get_mock.return_value = resp
     url = "http://kevinbacon.invalid/erddap/advanced?blahbah"
     store = cache.CacheStore()
     store.cache_response(url)
     sha = store.hash_url(url)
-    target = (Path(tempdir) / f'{sha}.gz') 
+    target = Path(tempdir) / f"{sha}.gz"
 
     store.clear_cache()
     assert not target.exists()
@@ -79,7 +81,7 @@ def test_clearing_cache(user_cache_dir_mock, http_get_mock, tempdir):
     assert not target.exists()
 
 
-@mock.patch('appdirs.user_cache_dir')
+@mock.patch("appdirs.user_cache_dir")
 def test_cache_no_dir(user_cache_dir_mock, tempdir):
     """Tests that the cache store will create the cache dir if it doesn't exist."""
     user_cache_dir_mock.return_value = tempdir
@@ -90,8 +92,8 @@ def test_cache_no_dir(user_cache_dir_mock, tempdir):
     assert tempdir.exists()
 
 
-@mock.patch('requests.get')
-@mock.patch('appdirs.user_cache_dir')
+@mock.patch("requests.get")
+@mock.patch("appdirs.user_cache_dir")
 def test_cache_read_csv(user_cache_dir_mock, http_get_mock, tempdir):
     user_cache_dir_mock.return_value = tempdir
     resp = mock.Mock()
@@ -105,19 +107,19 @@ def test_cache_read_csv(user_cache_dir_mock, http_get_mock, tempdir):
     with gzip.open(filepath, "wb") as f:
         f.write(b"col_a,col_b\n3,green\n4,yellow\n")
     df = store.read_csv(url)
-    assert df['col_a'].tolist() == [3, 4]
-    assert df['col_b'].tolist() == ["green", "yellow"]
+    assert df["col_a"].tolist() == [3, 4]
+    assert df["col_b"].tolist() == ["green", "yellow"]
 
     # Force a cache miss
     now = time.time()
     os.utime(filepath, (now - 1000, now - 1000))
     df = store.read_csv(url)
-    assert df['col_a'].tolist() == [1, 2]
-    assert df['col_b'].tolist() == ["blue", "red"]
+    assert df["col_a"].tolist() == [1, 2]
+    assert df["col_b"].tolist() == ["blue", "red"]
 
 
-@mock.patch('requests.get')
-@mock.patch('appdirs.user_cache_dir')
+@mock.patch("requests.get")
+@mock.patch("appdirs.user_cache_dir")
 def test_cache_read_json(user_cache_dir_mock, http_get_mock, tempdir):
     user_cache_dir_mock.return_value = tempdir
     resp = mock.Mock()
@@ -126,7 +128,7 @@ def test_cache_read_json(user_cache_dir_mock, http_get_mock, tempdir):
     store = cache.CacheStore()
     url = "http://blah.invalid/erddap/search?q=bacon+egg+and+cheese"
     data = store.read_json(url)
-    assert data == {'key': 'value', 'example': 'blah'}
+    assert data == {"key": "value", "example": "blah"}
     filepath = store.cache_file(url)
     with gzip.open(filepath, "wb") as f:
         f.write(b'{"different": "is different"}')
@@ -137,4 +139,4 @@ def test_cache_read_json(user_cache_dir_mock, http_get_mock, tempdir):
     now = time.time()
     os.utime(filepath, (now - 1000, now - 1000))
     data = store.read_json(url)
-    assert data == {'key': 'value', 'example': 'blah'}
+    assert data == {"key": "value", "example": "blah"}

@@ -1,22 +1,31 @@
 """Caching support."""
 import gzip
-import json
-import pandas as pd
-import time
-from typing import Optional, Union, Any, Type
-import appdirs
 import hashlib
-import requests
+import json
+import time
+
 from pathlib import Path
+from typing import Any, Optional, Type, Union
+
+import appdirs
+import pandas as pd
+import requests
 
 
 class CacheStore:
     """A caching mechanism to store HTTP responses in a local cache."""
 
-    def __init__(self, cache_dir: Optional[Path] = None, http_client: Optional[Type] = None, cache_period: Optional[Union[int, float]] = None):
-        self.cache_dir: Path = cache_dir or Path(appdirs.user_cache_dir("intake-erddap", "axds"))
+    def __init__(
+        self,
+        cache_dir: Optional[Path] = None,
+        http_client: Optional[Type] = None,
+        cache_period: Optional[Union[int, float]] = None,
+    ):
+        self.cache_dir: Path = cache_dir or Path(
+            appdirs.user_cache_dir("intake-erddap", "axds")
+        )
         self.http_client = http_client or requests
-        self.cache_period = cache_period or 500.
+        self.cache_period = cache_period or 500.0
 
         if not self.cache_dir.exists():
             self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -29,7 +38,7 @@ class CacheStore:
     def cache_file(self, url: str) -> Path:
         """Return the path to the cache file."""
         checksum = self.hash_url(url)
-        filename = self.cache_dir / f'{checksum}.gz'
+        filename = self.cache_dir / f"{checksum}.gz"
         return filename
 
     def cache_response(self, url: str, *args, **kwargs):
@@ -40,7 +49,12 @@ class CacheStore:
             resp.raise_for_status()
             f.write(resp.content)
 
-    def read_csv(self, url: str, pandas_kwargs: Optional[dict] = None, http_kwargs: Optional[dict] = None) -> pd.DataFrame:
+    def read_csv(
+        self,
+        url: str,
+        pandas_kwargs: Optional[dict] = None,
+        http_kwargs: Optional[dict] = None,
+    ) -> pd.DataFrame:
         """Return a pandas data frame read from source or cache."""
         pandas_kwargs = pandas_kwargs or {}
         http_kwargs = http_kwargs or {}
@@ -61,6 +75,7 @@ class CacheStore:
             return pd.read_csv(f, **pandas_kwargs)
 
     def read_json(self, url: str, http_kwargs: Optional[dict] = None) -> Any:
+        """Return the parsed JSON object from source or cache."""
         http_kwargs = http_kwargs or {}
         pth = self.cache_file(url)
         now = time.time()
@@ -88,14 +103,14 @@ class CacheStore:
 
     def _clear_cache(self):
         """Removes all cached files."""
-        for cache_file in self.cache_dir.glob('*.gz'):
+        for cache_file in self.cache_dir.glob("*.gz"):
             cache_file.unlink()
 
     def _clear_cache_mtime(self, age: Union[int, float]):
         """Removes cached files older than ``age`` seconds."""
         current_time = time.time()
         cutoff = current_time - age
-        for cache_file in self.cache_dir.glob('*.gz'):
+        for cache_file in self.cache_dir.glob("*.gz"):
             mtime = cache_file.stat().st_mtime
             if mtime <= cutoff:
                 cache_file.unlink()
