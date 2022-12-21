@@ -8,6 +8,7 @@ dependencies:
   - pandas
   - erddapy
   - panel
+  - appdirs
   - intake
   - intake-xarray>=0.6.1
   - pip

@@ -12,6 +12,8 @@ import pandas as pd
 
 from pandas import DataFrame
 
+from intake_erddap.cache import CacheStore
+
 
 log = getLogger("intake-erddap")
 
@@ -29,6 +31,7 @@ def get_project_version() -> str:
 def return_category_options(
     server: str,
     category: str = "standard_name",
+    cache_store: Optional[CacheStore] = None,
 ) -> DataFrame:
     """Find category options for ERDDAP server.
 
@@ -39,6 +42,9 @@ def return_category_options(
     category : str, optional
         ERDDAP category for filtering results. Default is "standard_name" but another good option is
         "variableName".
+    cache_store : CacheStore
+        The cache store to use for caching responses. If one is provided it will
+        be used instead of making the requests directly.
 
     Returns
     -------
@@ -47,11 +53,10 @@ def return_category_options(
         the link for search results for searching for a given category value.
     """
 
-    df = pd.read_csv(
-        f"{server}/categorize/{category}/index.csv?page=1&itemsPerPage=100000"
-    )
-
-    return df
+    url = f"{server}/categorize/{category}/index.csv?page=1&itemsPerPage=100000"
+    if cache_store is not None:
+        return cache_store.read_csv(url)
+    return pd.read_csv(url)
 
 
 def match_key_to_category(
@@ -59,6 +64,7 @@ def match_key_to_category(
     key: str,
     category: str = "standard_name",
     criteria: Optional[dict] = None,
+    cache_store: Optional[CacheStore] = None,
 ) -> list:
     """Find category values for server and return match to key.
 
@@ -75,6 +81,9 @@ def match_key_to_category(
     criteria : dict, optional
         Criteria to use to map from variable to attributes describing the variable. If user has
         defined custom_criteria, this will be used by default.
+    cache_store : CacheStore
+        The cache store to use for caching responses. If one is provided it will
+        be used instead of making the requests directly.
 
     Returns
     -------
@@ -82,7 +91,7 @@ def match_key_to_category(
         Values from category results that match key, according to the custom criteria.
     """
 
-    df = return_category_options(server, category)
+    df = return_category_options(server, category, cache_store=cache_store)
     matching_category_value = cfp.match_criteria_key(
         df["Category"].values, key, criteria=criteria
     )
@@ -98,7 +107,10 @@ def as_a_list(value: Any) -> list:
 
 
 def get_erddap_metadata(
-    server: str, constraints: Mapping[str, Any], http_client: Any = None
+    server: str,
+    constraints: Mapping[str, Any],
+    http_client: Any = None,
+    cache_store: Optional[CacheStore] = None,
 ) -> Mapping[str, dict]:
     """Return a map for all the dataset metadata."""
     if http_client is None:
@@ -123,6 +135,8 @@ def get_erddap_metadata(
     url = f"{server}/tabledap/allDatasets.json?" + quote_plus(",".join(fields))
     if constraints_query:
         url += "&" + urlencode(constraints_query)
+    if cache_store:  # pragma: no cover
+        return parse_erddap_tabledap_response(cache_store.read_json(url))
     resp = http_client.get(url)
     resp.raise_for_status()
     return parse_erddap_tabledap_response(resp.json())

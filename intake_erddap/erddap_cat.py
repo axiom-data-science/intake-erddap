@@ -22,6 +22,8 @@ from erddapy import ERDDAP
 from intake.catalog.base import Catalog
 from intake.catalog.local import LocalCatalogEntry
 
+from intake_erddap.cache import CacheStore
+
 from . import utils
 from .erddap import GridDAPSource, TableDAPSource
 from .utils import match_key_to_category
@@ -141,6 +143,7 @@ class ERDDAPCatalog(Catalog):
         self._query_type = query_type
         self.server = server
         self.search_url = None
+        self.cache_store = CacheStore()
 
         if kwargs_search is not None:
             checks = [
@@ -214,11 +217,14 @@ class ERDDAPCatalog(Catalog):
             category, key = category_search
             # Currently just take first match, but there could be more than one.
             self.kwargs_search[category] = match_key_to_category(
-                self.server, key, category
+                self.server, key, category, cache_store=self.cache_store
             )[0]
 
         metadata = metadata or {}
         metadata["kwargs_search"] = self.kwargs_search
+
+        # Clear the cache of old stale data on initialization
+        self.cache_store.clear_cache(self.cache_store.cache_period)
 
         super(ERDDAPCatalog, self).__init__(metadata=metadata, **kwargs)
 
@@ -226,7 +232,7 @@ class ERDDAPCatalog(Catalog):
         frames = []
         for url in self.get_search_urls():
             try:
-                df = pd.read_csv(url)
+                df = self.cache_store.read_csv(url)
             except HTTPError as e:
                 if e.code == 404:
                     log.warning(f"search {url} returned HTTP 404")
@@ -253,7 +259,7 @@ class ERDDAPCatalog(Catalog):
         """Returns all of the dataset metadata available from allDatasets API."""
         if self._dataset_metadata is None:
             self._dataset_metadata = utils.get_erddap_metadata(
-                self.server, self.kwargs_search
+                self.server, self.kwargs_search, cache_store=self.cache_store
             )
         return self._dataset_metadata
 
