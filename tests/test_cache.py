@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 from unittest import mock
 
+import pandas as pd
 import pytest
 
 from intake_erddap import cache
@@ -140,3 +141,37 @@ def test_cache_read_json(user_cache_dir_mock, http_get_mock, tempdir):
     os.utime(filepath, (now - 1000, now - 1000))
     data = store.read_json(url)
     assert data == {"key": "value", "example": "blah"}
+
+
+@mock.patch("requests.get")
+@mock.patch("appdirs.user_cache_dir")
+def test_cache_disabled(user_cache_dir_mock, http_get_mock, tempdir):
+    tempdir = Path(tempdir)
+    user_cache_dir_mock.return_value = tempdir
+    resp = mock.Mock()
+    http_get_mock.return_value = resp
+    resp.json.return_value = {"test": "test"}
+    store = cache.CacheStore(cache_period=0)
+    url = "http://blah.invalid/erddap/search?q=bacon+egg+and+cheese"
+    data = store.read_json(url)
+    assert data == {"test": "test"}
+    cache_contents = [i for i in tempdir.iterdir()]
+    assert len(cache_contents) == 0
+    assert not store.cache_enabled()
+
+
+@mock.patch("pandas.read_csv")
+@mock.patch("appdirs.user_cache_dir")
+def test_cache_disabled_csv(user_cache_dir_mock, csv_mock, tempdir):
+    tempdir = Path(tempdir)
+    user_cache_dir_mock.return_value = tempdir
+    df = pd.DataFrame({"col_a": [1, 2], "col_b": ["red", "blue"]})
+    csv_mock.return_value = df
+    store = cache.CacheStore(cache_period=0)
+    url = "http://blah.invalid/erddap/search?q=bacon+egg+and+cheese"
+    data = store.read_csv(url)
+    assert data["col_b"].tolist() == ["red", "blue"]
+    cache_contents = [i for i in tempdir.iterdir()]
+    assert len(cache_contents) == 0
+    assert not store.cache_enabled()
+    csv_mock.assert_called()

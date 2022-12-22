@@ -25,7 +25,10 @@ class CacheStore:
             appdirs.user_cache_dir("intake-erddap", "axds")
         )
         self.http_client = http_client or requests
-        self.cache_period = cache_period or 500.0
+        if cache_period is not None:
+            self.cache_period = cache_period
+        else:
+            self.cache_period = 500.0
 
         if not self.cache_dir.exists():
             self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -49,6 +52,10 @@ class CacheStore:
             resp.raise_for_status()
             f.write(resp.content)
 
+    def cache_enabled(self) -> bool:
+        """Returns true if the store should use the cache."""
+        return self.cache_period > 0
+
     def read_csv(
         self,
         url: str,
@@ -58,6 +65,8 @@ class CacheStore:
         """Return a pandas data frame read from source or cache."""
         pandas_kwargs = pandas_kwargs or {}
         http_kwargs = http_kwargs or {}
+        if not self.cache_enabled():
+            return pd.read_csv(url, **pandas_kwargs)
         pth = self.cache_file(url)
         now = time.time()
         allowed_mtime = now - self.cache_period
@@ -73,6 +82,10 @@ class CacheStore:
     def read_json(self, url: str, http_kwargs: Optional[dict] = None) -> Any:
         """Return the parsed JSON object from source or cache."""
         http_kwargs = http_kwargs or {}
+        if not self.cache_enabled():
+            resp = self.http_client.get(url, **http_kwargs)
+            resp.raise_for_status()
+            return resp.json()
         pth = self.cache_file(url)
         now = time.time()
         allowed_mtime = now - self.cache_period

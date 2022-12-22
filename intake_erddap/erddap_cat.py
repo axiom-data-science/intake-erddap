@@ -131,6 +131,7 @@ class ERDDAPCatalog(Catalog):
         protocol: str = "tabledap",
         metadata: dict = None,
         query_type: str = "union",
+        cache_period: Optional[Union[int, float]] = 500,
         **kwargs,
     ):
         if server.endswith("/"):
@@ -143,7 +144,7 @@ class ERDDAPCatalog(Catalog):
         self._query_type = query_type
         self.server = server
         self.search_url = None
-        self.cache_store = CacheStore()
+        self.cache_store = CacheStore(cache_period=cache_period)
 
         if kwargs_search is not None:
             checks = [
@@ -224,7 +225,7 @@ class ERDDAPCatalog(Catalog):
         metadata["kwargs_search"] = self.kwargs_search
 
         # Clear the cache of old stale data on initialization
-        self.cache_store.clear_cache(self.cache_store.cache_period)
+        self.cache_store.clear_cache(cache_period)
 
         super(ERDDAPCatalog, self).__init__(metadata=metadata, **kwargs)
 
