@@ -108,7 +108,7 @@ def test_erddap_catalog_searching_variable(mock_read_csv, load_metadata_mock):
         server=SERVER_URL, kwargs_search=kw, category_search=("standard_name", "temp")
     )
     assert "standard_name" in cat.kwargs_search
-    assert cat.kwargs_search["standard_name"] == "sea_water_temperature"
+    assert cat.kwargs_search["standard_name"] == ["sea_water_temperature"]
 
 
 @pytest.mark.integration
