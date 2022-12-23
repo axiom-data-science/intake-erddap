@@ -17,6 +17,7 @@ from typing import (
 from urllib.error import HTTPError
 
 import pandas as pd
+import requests
 
 from erddapy import ERDDAP
 from intake.catalog.base import Catalog
@@ -239,8 +240,17 @@ class ERDDAPCatalog(Catalog):
                     log.warning(f"search {url} returned HTTP 404")
                     continue
                 raise
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 404:
+                    log.warning(f"search {url} returned HTTP 404")
+                    continue
+                raise
             df.rename(columns={"Dataset ID": "datasetID"}, inplace=True)
             frames.append(df)
+
+        if len(frames) == 0:
+            return pd.DataFrame({})
+
         if self._query_type == "union":
             result = pd.concat(frames)
             result = result.drop_duplicates("datasetID")

@@ -187,14 +187,16 @@ def test_cache_on_http_error(user_cache_dir_mock, http_get_mock, tempdir):
     resp = mock.Mock()
     url = "http://blah.invalid/erddap/search?q=bacon+egg+and+cheese"
     http_get_mock.return_value = resp
-    resp.raise_for_status.side_effect = HTTPError(url, 404, 'Not Found', {}, io.BytesIO(b''))
+    resp.raise_for_status.side_effect = HTTPError(
+        url, 404, "Not Found", {}, io.BytesIO(b"")
+    )
     store = cache.CacheStore()
     with pytest.raises(HTTPError):
         store.read_csv(url)
 
     # Ensure that subsequent calls also raise HTTP Error and actually make the
     # attempt again
-    
+
     with pytest.raises(HTTPError):
         store.read_csv(url)
     assert http_get_mock.call_count == 2
