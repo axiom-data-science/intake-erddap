@@ -238,18 +238,17 @@ class ERDDAPCatalog(Catalog):
             except HTTPError as e:
                 if e.code == 404:
                     log.warning(f"search {url} returned HTTP 404")
-                    continue
-                raise
+                    df = pd.DataFrame({"datasetID": []})
+                else:
+                    raise
             except requests.exceptions.HTTPError as e:
                 if e.response.status_code == 404:
                     log.warning(f"search {url} returned HTTP 404")
-                    continue
-                raise
+                    df = pd.DataFrame({"datasetID": []})
+                else:
+                    raise
             df.rename(columns={"Dataset ID": "datasetID"}, inplace=True)
             frames.append(df)
-
-        if len(frames) == 0:
-            return pd.DataFrame({})
 
         if self._query_type == "union":
             result = pd.concat(frames)
