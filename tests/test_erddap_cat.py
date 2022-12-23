@@ -578,3 +578,22 @@ def test_empty_catalog(mock_read_csv, load_metadata_mock, single_dataset_catalog
         ERDDAPCatalog(
             server="http://blah.invalid/erddap", standard_names=["air_temperature"]
         )
+
+
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
+def test_empty_catalog_with_intersection(
+    mock_read_csv, load_metadata_mock, single_dataset_catalog
+):
+    load_metadata_mock.return_value = {}
+    resp = mock.Mock()
+    resp.status_code = 404
+    mock_read_csv.side_effect = requests.exceptions.HTTPError(response=resp)
+
+    cat = ERDDAPCatalog(
+        server="http://blah.invalid/erddap",
+        standard_names=["air_temperature"],
+        query_type="intersection",
+    )
+    assert len(cat) == 0
+    mock_read_csv.assert_called()
