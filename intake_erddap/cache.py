@@ -47,9 +47,9 @@ class CacheStore:
     def cache_response(self, url: str, *args, **kwargs):
         """Write the content of the HTTP response to a gzipped cached file."""
         filename = self.cache_file(url)
+        resp = self.http_client.get(url, *args, **kwargs)
+        resp.raise_for_status()
         with gzip.open(filename, "wb") as f:
-            resp = self.http_client.get(url, *args, **kwargs)
-            resp.raise_for_status()
             f.write(resp.content)
 
     def cache_enabled(self) -> bool:
