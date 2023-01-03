@@ -219,7 +219,7 @@ class ERDDAPCatalog(Catalog):
             # Currently just take first match, but there could be more than one.
             self.kwargs_search[category] = match_key_to_category(
                 self.server, key, category, cache_store=self.cache_store
-            )[0]
+            )
 
         metadata = metadata or {}
         metadata["kwargs_search"] = self.kwargs_search
