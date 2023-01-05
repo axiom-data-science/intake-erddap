@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from pathlib import Path
 from setuptools import setup
 
 
@@ -29,6 +30,7 @@ setup(
     },
     include_package_data=True,
     install_requires=requires,
-    long_description=open("README.md").read(),
+    long_description=Path("README.md").read_text(),
+    long_description_content_type='text/markdown',
     zip_safe=False,
 )
