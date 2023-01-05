@@ -91,7 +91,7 @@ To create an intake catalog for all of the ERDDAP's TableDAP offerings use:
 ```python
 import intake
 catalog = intake.open_erddap_cat(
-   server="https://erddap.sensors.ioos.us/erddap"
+    server="https://erddap.sensors.ioos.us/erddap"
 )
 ```
 
