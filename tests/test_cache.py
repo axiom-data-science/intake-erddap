@@ -1,6 +1,7 @@
 #!/usr/bin/env pytest
 """Unit tests for caching support."""
 import gzip
+import io
 import os
 import shutil
 import tempfile
@@ -8,6 +9,7 @@ import time
 
 from pathlib import Path
 from unittest import mock
+from urllib.error import HTTPError
 
 import pandas as pd
 import pytest
@@ -175,3 +177,26 @@ def test_cache_disabled_csv(user_cache_dir_mock, csv_mock, tempdir):
     assert len(cache_contents) == 0
     assert not store.cache_enabled()
     csv_mock.assert_called()
+
+
+@mock.patch("requests.get")
+@mock.patch("appdirs.user_cache_dir")
+def test_cache_on_http_error(user_cache_dir_mock, http_get_mock, tempdir):
+    tempdir = Path(tempdir)
+    user_cache_dir_mock.return_value = tempdir
+    resp = mock.Mock()
+    url = "http://blah.invalid/erddap/search?q=bacon+egg+and+cheese"
+    http_get_mock.return_value = resp
+    resp.raise_for_status.side_effect = HTTPError(
+        url, 404, "Not Found", {}, io.BytesIO(b"")
+    )
+    store = cache.CacheStore()
+    with pytest.raises(HTTPError):
+        store.read_csv(url)
+
+    # Ensure that subsequent calls also raise HTTP Error and actually make the
+    # attempt again
+
+    with pytest.raises(HTTPError):
+        store.read_csv(url)
+    assert http_get_mock.call_count == 2

@@ -13,6 +13,7 @@ import intake
 import numpy as np
 import pandas as pd
 import pytest
+import requests
 
 from erddapy import ERDDAP
 
@@ -415,8 +416,8 @@ def test_search_returns_404(mock_read_csv, load_metadata_mock):
     mock_read_csv.side_effect = HTTPError(
         code=404, msg="Blah", url=SERVER_URL, hdrs={}, fp=None
     )
-    with pytest.raises(ValueError):
-        ERDDAPCatalog(server=SERVER_URL)
+    cat = ERDDAPCatalog(server=SERVER_URL)
+    assert len(cat) == 0
     mock_read_csv.side_effect = HTTPError(
         code=500, msg="Blah", url=SERVER_URL, hdrs={}, fp=None
     )
@@ -537,3 +538,62 @@ def test_query_type_invalid(mock_read_csv, load_metadata_mock, single_dataset_ca
     mock_read_csv.return_value = single_dataset_catalog
     with pytest.raises(ValueError):
         ERDDAPCatalog(server="http://blah.invalid/erddap/", query_type="blah")
+
+
+@pytest.mark.integration
+def test_empty_search_results():
+    cat = intake.open_erddap_cat(
+        server="https://erddap.sensors.ioos.us/erddap",
+        standard_names=["sea_surface_temperature"],
+        kwargs_search={
+            "min_lon": -156.48529052734375,
+            "max_lon": -148.9251251220703,
+            "min_lat": 56.70049285888672,
+            "max_lat": 61.524776458740234,
+            "min_time": "2022-04-30T00:00:00.000000000",
+            "max_time": "2022-12-15T23:00:00.000000000",
+        },
+    )
+    assert len(cat) == 0
+
+
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
+def test_empty_catalog(mock_read_csv, load_metadata_mock, single_dataset_catalog):
+    load_metadata_mock.return_value = {}
+    resp = mock.Mock()
+    resp.status_code = 404
+    mock_read_csv.side_effect = requests.exceptions.HTTPError(response=resp)
+
+    cat = ERDDAPCatalog(
+        server="http://blah.invalid/erddap", standard_names=["air_temperature"]
+    )
+    assert len(cat) == 0
+    mock_read_csv.assert_called()
+
+    resp = mock.Mock()
+    resp.status_code = 500
+    mock_read_csv.side_effect = requests.exceptions.HTTPError(response=resp)
+    with pytest.raises(requests.exceptions.HTTPError):
+        ERDDAPCatalog(
+            server="http://blah.invalid/erddap", standard_names=["air_temperature"]
+        )
+
+
+@mock.patch("intake_erddap.erddap_cat.ERDDAPCatalog._load_metadata")
+@mock.patch("intake_erddap.cache.CacheStore.read_csv")
+def test_empty_catalog_with_intersection(
+    mock_read_csv, load_metadata_mock, single_dataset_catalog
+):
+    load_metadata_mock.return_value = {}
+    resp = mock.Mock()
+    resp.status_code = 404
+    mock_read_csv.side_effect = requests.exceptions.HTTPError(response=resp)
+
+    cat = ERDDAPCatalog(
+        server="http://blah.invalid/erddap",
+        standard_names=["air_temperature"],
+        query_type="intersection",
+    )
+    assert len(cat) == 0
+    mock_read_csv.assert_called()
