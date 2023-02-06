@@ -32,6 +32,7 @@ dependencies:
      - git+https://github.com/intake/intake
      - intake-parquet
      - intake-xarray
+     - intake-erddap
     #  - "dask[complete]"
      - docrep<=0.2.7
      - furo
