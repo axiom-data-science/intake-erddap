@@ -46,6 +46,9 @@ class ERDDAPSource(base.DataSource):
     http_client : class, optional
         The client object to use for HTTP requests. Must conform to the
         `requests` interface.
+    open_kwargs : dict, optional
+        Keyword arguments to pass on to the open function like `e.to_pandas`
+        for a DataFrame. For example, {"parse_dates": True}
 
     Note
     ----
@@ -66,6 +69,7 @@ class ERDDAPSource(base.DataSource):
         metadata: dict = None,
         erddap_client: Optional[Type[ERDDAP]] = None,
         http_client: Optional[Type] = None,
+        open_kwargs: dict = None,
     ):
         variables = variables or []
         constraints = constraints or {}
@@ -85,6 +89,7 @@ class ERDDAPSource(base.DataSource):
         self._constraints = constraints
         self._erddap_client = erddap_client or ERDDAP
         self._http = http_client or requests
+        self.open_kwargs = open_kwargs or {}
 
         super(ERDDAPSource, self).__init__(metadata=metadata)
 
@@ -126,7 +131,11 @@ class TableDAPSource(ERDDAPSource):
         An object or module that implements an HTTP Client similar to request's
         interface. The source will use this object to make HTTP requests to
         ERDDAP in some cases.
-
+    mask_failed_qartod : bool, False
+        If True and `*_qc_agg` columns associated with data columns are available,
+        data values associated with QARTOD flags other than 1 and 2 will be nan'ed out.
+    dropna : bool, False.
+        If True, rows with data columns of nans will be dropped from data frame.
     Examples
     --------
     Sources are normally returned from a catalog object, but a source can be instantiated directly:
@@ -160,10 +169,19 @@ class TableDAPSource(ERDDAPSource):
     container = "dataframe"
     partition_access = True
 
-    def __init__(self, server: str, *args, **kwargs):
+    def __init__(
+        self,
+        server: str,
+        mask_failed_qartod: bool = False,
+        dropna: bool = False,
+        *args,
+        **kwargs,
+    ):
         self._server = server
         self._dataframe: Optional[pd.DataFrame] = None
         self._dataset_metadata: Optional[dict] = None
+        self._mask_failed_qartod = mask_failed_qartod
+        self._dropna = dropna
         kwargs.pop("protocol", None)
         # https://github.com/python/mypy/issues/6799
         super().__init__(*args, protocol="tabledap", **kwargs)  # type: ignore
@@ -198,7 +216,54 @@ class TableDAPSource(ERDDAPSource):
 
     def _load(self):
         e = self.get_client()
-        self._dataframe: pd.DataFrame = e.to_pandas()
+        self._dataframe: pd.DataFrame = e.to_pandas(
+            requests_kwargs={"timeout": 60}, **self.open_kwargs
+        )
+        if self._mask_failed_qartod:
+            self.run_mask_failed_qartod()
+        if self._dropna:
+            self.run_dropna()
+
+    @property
+    def data_cols(self):
+        """Columns that are not axes, coordinates, nor qc_agg columns."""
+
+        import cf_pandas  # noqa: F401
+
+        # find data columns which are what we'll use in the final step to drop nan's
+        # don't include dimension/coordinates-type columns (dimcols) nor qc_agg columns (qccols)
+        dimcols = self._dataframe.cf.axes_cols + self._dataframe.cf.coordinates_cols
+        qccols = list(
+            self._dataframe.columns[self._dataframe.columns.str.contains("_qc_agg")]
+        )
+
+        datacols = [
+            col for col in self._dataframe.columns if col not in dimcols + qccols
+        ]
+
+        return datacols
+
+    def run_mask_failed_qartod(self):
+        """Nan data values for which corresponding qc_agg columns is not equal to 1 or 2.
+
+        To get this to work you may need to specify the "qc_agg" columns to come along specifically
+        in the variables input.
+        """
+
+        # if a data column has an associated qc column, use it to weed out bad data by
+        # setting it to nan.
+        for datacol in self.data_cols:
+            qccol = f"{datacol}_qc_agg"
+            if qccol in self._dataframe.columns:
+                self._dataframe.loc[
+                    ~self._dataframe[qccol].isin([1, 2]), datacol
+                ] = pd.NA
+
+    def run_dropna(self):
+        """Drop nan rows based on the data columns."""
+        self._dataframe = self._dataframe.dropna(subset=self.data_cols).reset_index(
+            drop=True
+        )
 
     def _get_dataset_metadata(self) -> dict:
         """Fetch and return the metadata document for the dataset."""

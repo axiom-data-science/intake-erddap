@@ -81,6 +81,35 @@ def test_erddap_source_read(mock_to_pandas, mock_get_dataset_metadata):
     assert source._dataframe is None
 
 
+@mock.patch("intake_erddap.erddap.TableDAPSource._get_dataset_metadata")
+@mock.patch("erddapy.ERDDAP.to_pandas")
+def test_erddap_source_read_processing(mock_to_pandas, mock_get_dataset_metadata):
+    """Tests that the source will read from ERDDAP into a pd.DataFrame with processing flag."""
+    df = pd.DataFrame()
+    df["time"] = [
+        "2022-10-21T01:00:00Z",
+        "2022-10-21T02:00:00Z",
+        "2022-10-21T03:00:00Z",
+    ]
+    df["sea_water_temperature"] = [13.4, 13.4, np.nan]
+    df["sea_water_temperature_qc_agg"] = [1, 4, 2]
+    mock_to_pandas.return_value = df
+    mock_get_dataset_metadata.return_value = {}
+
+    source = TableDAPSource(
+        server="http://erddap.invalid/erddap",
+        dataset_id="abc123",
+        protocol="tabledap",
+        mask_failed_qartod=True,
+        dropna=True,
+    )
+    df = source.read()
+    assert df is not None
+    assert mock_to_pandas.called
+    # mask_failed_qartod flag removes 2nd data point and dropna removes 3rd data point
+    assert len(df) == 1
+
+
 @mock.patch("requests.get")
 def test_tabledap_source_get_dataset_metadata(mock_get):
     test_data = Path(__file__).parent / "test_data/tabledap_metadata.json"
