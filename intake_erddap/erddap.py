@@ -258,6 +258,7 @@ class TableDAPSource(ERDDAPSource):
                 self._dataframe.loc[
                     ~self._dataframe[qccol].isin([1, 2]), datacol
                 ] = pd.NA
+                self._dataframe.drop(columns=[qccol], inplace=True)
 
     def run_dropna(self):
         """Drop nan rows based on the data columns."""
