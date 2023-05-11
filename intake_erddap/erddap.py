@@ -4,6 +4,7 @@ import typing
 from logging import getLogger
 from typing import List, Optional, Tuple, Type, Union
 
+import cf_pandas  # noqa: F401
 import numpy as np
 import pandas as pd
 import requests
@@ -132,10 +133,13 @@ class TableDAPSource(ERDDAPSource):
         interface. The source will use this object to make HTTP requests to
         ERDDAP in some cases.
     mask_failed_qartod : bool, False
-        If True and `*_qc_agg` columns associated with data columns are available,
-        data values associated with QARTOD flags other than 1 and 2 will be nan'ed out.
+        WARNING ALPHA FEATURE. If True and `*_qc_agg` columns associated with
+        data columns are available, data values associated with QARTOD flags
+        other than 1 and 2 will be nan'ed out. Has not been thoroughly tested.
     dropna : bool, False.
-        If True, rows with data columns of nans will be dropped from data frame.
+        WARNING ALPHA FEATURE. If True, rows with data columns of nans will be
+        dropped from data frame. Has not been thoroughly tested.
+
     Examples
     --------
     Sources are normally returned from a catalog object, but a source can be instantiated directly:
@@ -227,8 +231,6 @@ class TableDAPSource(ERDDAPSource):
     @property
     def data_cols(self):
         """Columns that are not axes, coordinates, nor qc_agg columns."""
-
-        import cf_pandas  # noqa: F401
 
         # find data columns which are what we'll use in the final step to drop nan's
         # don't include dimension/coordinates-type columns (dimcols) nor qc_agg columns (qccols)

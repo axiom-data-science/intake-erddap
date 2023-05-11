@@ -103,10 +103,12 @@ class ERDDAPCatalog(Catalog):
         AND of the results. If the value is ``"union"`` then the results will be
         the union of each resulting dataset. This is equivalent to a logical OR.
     mask_failed_qartod : bool, False
-        If True and `*_qc_agg` columns associated with data columns are available,
-        data values associated with QARTOD flags other than 1 and 2 will be nan'ed out.
+        WARNING ALPHA FEATURE. If True and `*_qc_agg` columns associated with
+        data columns are available, data values associated with QARTOD flags
+        other than 1 and 2 will be nan'ed out. Has not been thoroughly tested.
     dropna : bool, False.
-        If True, rows with data columns of nans will be dropped from data frame.
+        WARNING ALPHA FEATURE. If True, rows with data columns of nans will be
+        dropped from data frame. Has not been thoroughly tested.
 
     Attributes
     ----------
