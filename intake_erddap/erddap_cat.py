@@ -102,6 +102,13 @@ class ERDDAPCatalog(Catalog):
         each individual query made to ERDDAP. This is equivalent to a logical
         AND of the results. If the value is ``"union"`` then the results will be
         the union of each resulting dataset. This is equivalent to a logical OR.
+    mask_failed_qartod : bool, False
+        WARNING ALPHA FEATURE. If True and `*_qc_agg` columns associated with
+        data columns are available, data values associated with QARTOD flags
+        other than 1 and 2 will be nan'ed out. Has not been thoroughly tested.
+    dropna : bool, False.
+        WARNING ALPHA FEATURE. If True, rows with data columns of nans will be
+        dropped from data frame. Has not been thoroughly tested.
 
     Attributes
     ----------
@@ -133,6 +140,9 @@ class ERDDAPCatalog(Catalog):
         metadata: dict = None,
         query_type: str = "union",
         cache_period: Optional[Union[int, float]] = 500,
+        open_kwargs: dict = None,
+        mask_failed_qartod: bool = False,
+        dropna: bool = False,
         **kwargs,
     ):
         if server.endswith("/"):
@@ -146,6 +156,9 @@ class ERDDAPCatalog(Catalog):
         self.server = server
         self.search_url = None
         self.cache_store = CacheStore(cache_period=cache_period)
+        self.open_kwargs = open_kwargs or {}
+        self._mask_failed_qartod = mask_failed_qartod
+        self._dropna = dropna
 
         if kwargs_search is not None:
             checks = [
@@ -409,8 +422,15 @@ class ERDDAPCatalog(Catalog):
                 "dataset_id": dataset_id,
                 "protocol": self._protocol,
                 "constraints": {},
+                "open_kwargs": self.open_kwargs,
             }
             if self._protocol == "tabledap":
+                args.update(
+                    {
+                        "mask_failed_qartod": self._mask_failed_qartod,
+                        "dropna": self._dropna,
+                    }
+                )
                 args["constraints"].update(self._get_tabledap_constraints())
 
             metadata = all_metadata.get(dataset_id, {})
