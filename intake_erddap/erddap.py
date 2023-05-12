@@ -5,6 +5,7 @@ from logging import getLogger
 from typing import List, Optional, Tuple, Type, Union
 
 import cf_pandas  # noqa: F401
+import fsspec
 import numpy as np
 import pandas as pd
 import requests
@@ -139,6 +140,11 @@ class TableDAPSource(ERDDAPSource):
     dropna : bool, False.
         WARNING ALPHA FEATURE. If True, rows with data columns of nans will be
         dropped from data frame. Has not been thoroughly tested.
+    cache_kwargs : dict, optional
+        WARNING ALPHA FEATURE. If you want to have the data you access stored
+        locally in a cache, use this keyword to input a dictionary of keywords.
+        The cache is set up using ``fsspec``'s simple cache. Example configuration
+        is ``cache_kwargs=dict(cache_storage="/tmp/fnames/", same_names=True)``.
 
     Examples
     --------
@@ -178,6 +184,7 @@ class TableDAPSource(ERDDAPSource):
         server: str,
         mask_failed_qartod: bool = False,
         dropna: bool = False,
+        cache_kwargs: Optional[dict] = None,
         *args,
         **kwargs,
     ):
@@ -186,6 +193,7 @@ class TableDAPSource(ERDDAPSource):
         self._dataset_metadata: Optional[dict] = None
         self._mask_failed_qartod = mask_failed_qartod
         self._dropna = dropna
+        self._cache_kwargs = cache_kwargs
         kwargs.pop("protocol", None)
         # https://github.com/python/mypy/issues/6799
         super().__init__(*args, protocol="tabledap", **kwargs)  # type: ignore
@@ -220,9 +228,18 @@ class TableDAPSource(ERDDAPSource):
 
     def _load(self):
         e = self.get_client()
-        self._dataframe: pd.DataFrame = e.to_pandas(
-            requests_kwargs={"timeout": 60}, **self.open_kwargs
-        )
+        if self._cache_kwargs is not None:
+            if "response" in self.open_kwargs:
+                response = self.open_kwargs["response"]
+                self.open_kwargs.pop("response")
+            url = e.get_download_url(response=response)
+
+            with fsspec.open(f"simplecache::{url}", **self._cache_kwargs) as f:
+                self._dataframe: pd.DataFrame = pd.read_csv(f, **self.open_kwargs)
+        else:
+            self._dataframe: pd.DataFrame = e.to_pandas(
+                requests_kwargs={"timeout": 60}, **self.open_kwargs
+            )
         if self._mask_failed_qartod:
             self.run_mask_failed_qartod()
         if self._dropna:
