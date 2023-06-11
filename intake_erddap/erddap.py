@@ -232,7 +232,9 @@ class TableDAPSource(ERDDAPSource):
             if "response" in self.open_kwargs:
                 response = self.open_kwargs["response"]
                 self.open_kwargs.pop("response")
-            url = e.get_download_url(response=response)
+                url = e.get_download_url(response=response)
+            else:
+                url = e.get_download_url(response=response)
 
             with fsspec.open(f"simplecache::{url}", **self._cache_kwargs) as f:
                 self._dataframe: pd.DataFrame = pd.read_csv(f, **self.open_kwargs)
