@@ -109,6 +109,11 @@ class ERDDAPCatalog(Catalog):
     dropna : bool, False.
         WARNING ALPHA FEATURE. If True, rows with data columns of nans will be
         dropped from data frame. Has not been thoroughly tested.
+    cache_kwargs : dict, optional
+        WARNING ALPHA FEATURE. If you want to have the data you access stored
+        locally in a cache, use this keyword to input a dictionary of keywords.
+        The cache is set up using ``fsspec``'s simple cache. Example configuration
+        is ``cache_kwargs=dict(cache_storage="/tmp/fnames/", same_names=True)``.
 
     Attributes
     ----------
@@ -143,6 +148,7 @@ class ERDDAPCatalog(Catalog):
         open_kwargs: dict = None,
         mask_failed_qartod: bool = False,
         dropna: bool = False,
+        cache_kwargs: Optional[dict] = None,
         **kwargs,
     ):
         if server.endswith("/"):
@@ -159,6 +165,7 @@ class ERDDAPCatalog(Catalog):
         self.open_kwargs = open_kwargs or {}
         self._mask_failed_qartod = mask_failed_qartod
         self._dropna = dropna
+        self._cache_kwargs = cache_kwargs
 
         if kwargs_search is not None:
             checks = [
@@ -429,6 +436,7 @@ class ERDDAPCatalog(Catalog):
                     {
                         "mask_failed_qartod": self._mask_failed_qartod,
                         "dropna": self._dropna,
+                        "cache_kwargs": self._cache_kwargs,
                     }
                 )
                 args["constraints"].update(self._get_tabledap_constraints())

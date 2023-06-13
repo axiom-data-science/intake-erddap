@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - python
+  - fsspec
   - numpy
   - dask
   - pandas
