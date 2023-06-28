@@ -283,9 +283,7 @@ class TableDAPSource(ERDDAPSource):
 
     def run_dropna(self):
         """Drop nan rows based on the data columns."""
-        self._dataframe = self._dataframe.dropna(subset=self.data_cols).reset_index(
-            drop=True
-        )
+        self._dataframe = self._dataframe.dropna(subset=self.data_cols)
 
     def _get_dataset_metadata(self) -> dict:
         """Fetch and return the metadata document for the dataset."""
