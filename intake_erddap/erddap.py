@@ -236,7 +236,7 @@ class TableDAPSource(ERDDAPSource):
             else:
                 url = e.get_download_url(response=response)
 
-            with fsspec.open(f"simplecache::{url}", **self._cache_kwargs) as f:
+            with fsspec.open(f"simplecache://::{url}", **self._cache_kwargs) as f:
                 self._dataframe: pd.DataFrame = pd.read_csv(f, **self.open_kwargs)
         else:
             self._dataframe: pd.DataFrame = e.to_pandas(
