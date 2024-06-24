@@ -20,8 +20,10 @@ import pandas as pd
 import requests
 
 from erddapy import ERDDAP
-from intake.catalog.base import Catalog
-from intake.catalog.local import LocalCatalogEntry
+# from intake.catalog.base import Catalog
+from intake.readers.entry import Catalog, DataDescription
+from intake.readers.readers import BaseReader
+# from intake.catalog.local import LocalCatalogEntry
 
 from intake_erddap.cache import CacheStore
 
@@ -34,7 +36,7 @@ from .version import __version__
 log = getLogger("intake-erddap")
 
 
-class ERDDAPCatalog(Catalog):
+class ERDDAPCatalogReader(BaseReader):
     """
     Makes data sources out of all datasets the given ERDDAP service
 
@@ -125,6 +127,7 @@ class ERDDAPCatalog(Catalog):
 
     name = "erddap_cat"
     version = __version__
+    output_instance = "intake.readers.entry:Catalog"
 
     def __init__(
         self,
@@ -154,7 +157,7 @@ class ERDDAPCatalog(Catalog):
         if server.endswith("/"):
             server = server[:-1]
         self._erddap_client = erddap_client or ERDDAP
-        self._entries: Dict[str, LocalCatalogEntry] = {}
+        self._entries: Dict[str, Catalog] = {}
         self._use_source_constraints = use_source_constraints
         self._protocol = protocol
         self._dataset_metadata: Optional[Mapping[str, dict]] = None
@@ -248,7 +251,7 @@ class ERDDAPCatalog(Catalog):
         # Clear the cache of old stale data on initialization
         self.cache_store.clear_cache(cache_period)
 
-        super(ERDDAPCatalog, self).__init__(metadata=metadata, **kwargs)
+        super(ERDDAPCatalogReader, self).__init__(metadata=metadata, **kwargs)
 
     def _load_df(self) -> pd.DataFrame:
         frames = []
@@ -410,20 +413,22 @@ class ERDDAPCatalog(Catalog):
         e.dataset_id = "allDatasets"
         return e
 
-    def _load(self):
+    def read(self):
         dataidkey = "datasetID"
         e = self.get_client()
         df = self._load_df()
         all_metadata = self._load_metadata()
 
         self._entries = {}
+        
+        # Remove datasets that are redundant
+        df = df[(~df["datasetID"].str.startswith("ism-")) * (df["datasetID"] != "allDatasets")]
 
+        entries, aliases = {}, {}
         for index, row in df.iterrows():
             dataset_id = row[dataidkey]
-            if dataset_id == "allDatasets":
-                continue
+            metadata = all_metadata.get(dataset_id, {})
 
-            description = "ERDDAP dataset_id %s from %s" % (dataset_id, self.server)
             args = {
                 "server": self.server,
                 "dataset_id": dataset_id,
@@ -440,30 +445,32 @@ class ERDDAPCatalog(Catalog):
                     }
                 )
                 args["constraints"].update(self._get_tabledap_constraints())
-
-            metadata = all_metadata.get(dataset_id, {})
-
-            entry = LocalCatalogEntry(
-                name=dataset_id,
-                description=description,
-                driver=self._protocol,
-                args=args,
-                metadata=metadata,
-                getenv=False,
-                getshell=False,
-            )
-            if self._protocol == "tabledap":
-                entry._metadata["info_url"] = e.get_info_url(
-                    response="csv", dataset_id=dataset_id
-                )
-                entry._plugin = [TableDAPSource]
+                datatype = "intake_erddap.erddap:TableDAPSource"
             elif self._protocol == "griddap":
-                entry._plugin = [GridDAPSource]
+                args.update(
+                    {
+                        "chunks": self._chunks,
+                        "xarray_kwargs": self._xarray_kwargs,
+                    }
+                )
+                # no equivalent for griddap, though maybe it works the same?
+                args["constraints"].update(self._get_tabledap_constraints())
+                datatype = "intake_erddap.erddap:GridDAPSource"
             else:
                 raise ValueError(f"Unsupported protocol: {self._protocol}")
 
-            self._entries[dataset_id] = entry
+            metadata["info_url"] = e.get_info_url(
+                response="csv", dataset_id=dataset_id
+            )
+            entries[dataset_id] = DataDescription(
+                datatype,
+                kwargs={"dataset_id": dataset_id, **args, "metadata": metadata,},
+            )
+            aliases[dataset_id] = dataset_id
 
+        cat = Catalog(data=entries, aliases=aliases,)
+        return cat        
+            
     def _get_tabledap_constraints(self) -> Dict[str, Union[str, int, float]]:
         """Return the constraints dictionary for a tabledap source."""
         result = {}

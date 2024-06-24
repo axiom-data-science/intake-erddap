@@ -3,7 +3,6 @@
 from pathlib import Path
 from setuptools import setup
 
-
 requires = open("requirements.txt").read().strip().split("\n")
 
 setup(
@@ -22,11 +21,11 @@ setup(
     packages=["intake_erddap"],
     package_data={"": ["*.csv", "*.yml", "*.html"]},
     entry_points={
-        "intake.drivers": [
+        "intake.imports": [
             "tabledap = intake_erddap.erddap:TableDAPSource",
             "griddap = intake_erddap.erddap:GridDAPSource",
-            "erddap_cat = intake_erddap.erddap_cat:ERDDAPCatalog",
-        ]
+            "erddap_cat = intake_erddap.erddap_cat:ERDDAPCatalogReader",
+        ],
     },
     include_package_data=True,
     install_requires=requires,

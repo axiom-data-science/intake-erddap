@@ -13,6 +13,9 @@ import xarray as xr
 
 from erddapy import ERDDAP
 from intake.source import base
+from intake.readers.readers import BaseReader
+from intake.readers.entry import ReaderDescription
+from intake.readers.datatypes import BaseData
 
 from .version import __version__
 
@@ -24,8 +27,8 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     # numpy typing is only available after version 1.21
     from numpy.typing import ArrayLike
 
-
-class ERDDAPSource(base.DataSource):
+    
+class ERDDAPSource(BaseData):
     """
     ERDDAP Source (Base Class). This class represents the abstract base class
     for an intake data source object for ERDDAP. Clients should use either
@@ -221,7 +224,10 @@ class TableDAPSource(ERDDAPSource):
 
     def read(self) -> pd.DataFrame:
         """Return the dataframe from ERDDAP"""
-        return self._get_partition()
+        # return self._get_partition()
+        if self._dataframe is None:
+            self._load()
+        return self._dataframe
 
     def _close(self):
         self._dataframe = None
