@@ -464,7 +464,8 @@ class ERDDAPCatalogReader(BaseReader):
             )
             entries[dataset_id] = DataDescription(
                 datatype,
-                kwargs={"dataset_id": dataset_id, **args, "metadata": metadata,},
+                kwargs={"dataset_id": dataset_id, **args},
+                metadata=metadata,
             )
             aliases[dataset_id] = dataset_id
 
