@@ -132,6 +132,7 @@ class TableDAPSource(ERDDAPSource):
     'units': 'seconds since 1970-01-01T00:00:00Z'},
         ...
     """
+    output_instance = "pandas:DataFrame"
 
     def _read(self, server, dataset_id, mask_failed_qartod=False, dropna=False, cache_kwargs=None,
               constraints=None, **kw):
