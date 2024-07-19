@@ -1,20 +1,16 @@
 """Reader implementations for intake-erddap."""
-import typing
 
 from logging import getLogger
-from typing import List, Optional, Tuple, Type, Union
+from typing import List, Union
 
 import cf_pandas  # noqa: F401
 import fsspec
-import numpy as np
 import pandas as pd
 import requests
 import xarray as xr
 
 from erddapy import ERDDAP
 from intake.readers.readers import BaseReader
-from intake.readers.entry import ReaderDescription
-from intake.readers.datatypes import BaseData
 
 
 log = getLogger("intake-erddap")
@@ -54,7 +50,9 @@ class ERDDAPReader(BaseReader):
 
     output_instance = "xarray:Dataset"
 
-    def get_client(self, server, protocol, dataset_id, variables, constraints, client=ERDDAP, **_) -> ERDDAP:
+    def get_client(
+        self, server, protocol, dataset_id, variables, constraints, client=ERDDAP, **_
+    ) -> ERDDAP:
         """Return an initialized ERDDAP Client."""
         e = client(server=server)
         e.protocol = protocol
@@ -132,38 +130,59 @@ class TableDAPReader(ERDDAPReader):
     'units': 'seconds since 1970-01-01T00:00:00Z'},
         ...
     """
+
     output_instance = "pandas:DataFrame"
 
-    def _read(self, server, dataset_id, variables=None, mask_failed_qartod=False, dropna=False, cache_kwargs=None,
-              open_kwargs=None, constraints=None, **kw):
+    def _read(
+        self,
+        server,
+        dataset_id,
+        variables=None,
+        mask_failed_qartod=False,
+        dropna=False,
+        cache_kwargs=None,
+        open_kwargs=None,
+        constraints=None,
+        **kw,
+    ):
         open_kwargs = open_kwargs or {}
         variables = variables or []
         kw.pop("protocol", None)
         protocol = kw.pop("protocol", "tabledap")
-        
+
         # check for variables in user-input list that are not available for the dataset
         meta2 = self._get_dataset_metadata(server, dataset_id)
         variables_diff = set(variables) - set(meta2["variables"].keys())
         if len(variables_diff) > 0:
             variables = [var for var in variables if var not in variables_diff]
 
-        e = self.get_client(server, protocol, dataset_id, variables=variables,
-                            constraints=constraints or {}, **kw)
+        e = self.get_client(
+            server,
+            protocol,
+            dataset_id,
+            variables=variables,
+            constraints=constraints or {},
+            **kw,
+        )
         if cache_kwargs is not None:
             if "response" in open_kwargs:
                 response = open_kwargs["response"]
                 open_kwargs.pop("response")
                 url = e.get_download_url(response=response)
             else:
-                url = e.get_download_url(response="csvp")  # should this be the default or csv?
+                url = e.get_download_url(
+                    response="csvp"
+                )  # should this be the default or csv?
 
             try:
                 with fsspec.open(f"simplecache://::{url}", **(cache_kwargs or {})) as f:
                     dataframe: pd.DataFrame = pd.read_csv(f, **open_kwargs)
             except OSError as e:  # might get file name too long
                 print(e)
-                print("If your filenames are too long, input only a few variables"
-                      "to return or input into cache kwargs `same_names=False`")
+                print(
+                    "If your filenames are too long, input only a few variables"
+                    "to return or input into cache kwargs `same_names=False`"
+                )
         else:
             dataframe: pd.DataFrame = e.to_pandas(
                 requests_kwargs={"timeout": 60}, **open_kwargs
@@ -181,12 +200,8 @@ class TableDAPReader(ERDDAPReader):
         # find data columns which are what we'll use in the final step to drop nan's
         # don't include dimension/coordinates-type columns (dimcols) nor qc_agg columns (qccols)
         dimcols = df.cf.axes_cols + df.cf.coordinates_cols
-        qccols = list(
-            df.columns[df.columns.str.contains("_qc_agg")]
-        )
-        datacols = [
-            col for col in df.columns if col not in dimcols + qccols
-        ]
+        qccols = list(df.columns[df.columns.str.contains("_qc_agg")])
+        datacols = [col for col in df.columns if col not in dimcols + qccols]
         return datacols
 
     def run_mask_failed_qartod(self, df):
@@ -324,22 +339,21 @@ class GridDAPReader(ERDDAPReader):
     #     kwargs.pop("protocol", None)
     #     super().__init__(dataset_id=dataset_id, protocol="griddap", **kwargs)  # type: ignore
 
-    def _read(self, 
+    def _read(
+        self,
         server: str,
         dataset_id: str,
         constraints: dict = None,
         chunks: Union[None, int, dict, str] = None,
         xarray_kwargs: dict = None,
-        **kw
-):
+        **kw,
+    ):
         constraints = constraints or {}
         chunks = chunks or {}
         xarray_kwargs = xarray_kwargs or {}
         urlpath = f"{server}/griddap/{dataset_id}"
-        
-        ds = xr.open_dataset(
-            urlpath, chunks=chunks, **xarray_kwargs
-        )
+
+        ds = xr.open_dataset(urlpath, chunks=chunks, **xarray_kwargs)
         # _NCProperties is an internal property which xarray does not yet deal
         # with specially, so we remove it here to prevent it from causing
         # problems for clients.

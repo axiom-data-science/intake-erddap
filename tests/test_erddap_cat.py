@@ -270,7 +270,9 @@ def test_catalog_with_griddap(
         "min_time": "2022-01-01",
         "max_time": "2022-11-07",
     }
-    cat = ERDDAPCatalogReader(server=SERVER_URL, kwargs_search=search, protocol="griddap").read()
+    cat = ERDDAPCatalogReader(
+        server=SERVER_URL, kwargs_search=search, protocol="griddap"
+    ).read()
     dataset_id = list(cat)[0]
     reader = cat[dataset_id]
     assert isinstance(reader, GridDAPReader)
@@ -288,7 +290,9 @@ def test_catalog_with_unsupported_protocol(
     }
     mock_read_csv.return_value = single_dataset_catalog
     with pytest.raises(ValueError):
-        ERDDAPCatalogReader(server=SERVER_URL, kwargs_search=search, protocol="fakedap").read()
+        ERDDAPCatalogReader(
+            server=SERVER_URL, kwargs_search=search, protocol="fakedap"
+        ).read()
 
 
 @mock.patch("intake_erddap.erddap_cat.ERDDAPCatalogReader._load_metadata")
@@ -445,8 +449,8 @@ def test_saving_catalog(
     assert dataset_id == "abc123"
     reader = cat[dataset_id]
     assert isinstance(reader, TableDAPReader)
-    assert cat.__dict__["data"][dataset_id].__dict__['kwargs']["protocol"] == "tabledap"
-    assert cat.__dict__["data"][dataset_id].__dict__['kwargs']["server"] == SERVER_URL
+    assert cat.__dict__["data"][dataset_id].__dict__["kwargs"]["protocol"] == "tabledap"
+    assert cat.__dict__["data"][dataset_id].__dict__["kwargs"]["server"] == SERVER_URL
 
     cat = ERDDAPCatalogReader(server=SERVER_URL, protocol="griddap").read()
     cat.to_yaml_file(temporary_catalog)
@@ -456,8 +460,8 @@ def test_saving_catalog(
     assert dataset_id == "abc123"
     reader = cat[dataset_id]
     assert isinstance(reader, GridDAPReader)
-    assert cat.__dict__["data"][dataset_id].__dict__['kwargs']["protocol"] == "griddap"
-    assert cat.__dict__["data"][dataset_id].__dict__['kwargs']["server"] == SERVER_URL
+    assert cat.__dict__["data"][dataset_id].__dict__["kwargs"]["protocol"] == "griddap"
+    assert cat.__dict__["data"][dataset_id].__dict__["kwargs"]["server"] == SERVER_URL
 
 
 @mock.patch("intake_erddap.utils.get_erddap_metadata")
@@ -544,7 +548,9 @@ def test_query_type_invalid(mock_read_csv, load_metadata_mock, single_dataset_ca
     load_metadata_mock.return_value = {}
     mock_read_csv.return_value = single_dataset_catalog
     with pytest.raises(ValueError):
-        ERDDAPCatalogReader(server="http://blah.invalid/erddap/", query_type="blah").read()
+        ERDDAPCatalogReader(
+            server="http://blah.invalid/erddap/", query_type="blah"
+        ).read()
 
 
 @pytest.mark.integration

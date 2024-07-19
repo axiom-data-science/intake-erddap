@@ -80,7 +80,7 @@ containing a plaintext search term::
         search_for=["ioos", "aoos", "NOAA"],
     )
 
-This can also be useful if you know the name of the station or stations you want 
+This can also be useful if you know the name of the station or stations you want
 to make a catalog from ::
 
     cat = intake_erddap.ERDDAPCatalogReader(
@@ -108,7 +108,7 @@ Constraints
 -----------
 
 Use the input option `use_source_constraints=True` to use any relevant parameter
-from "kwargs_search" constraints in the query. This will pass a `start_time` on 
+from "kwargs_search" constraints in the query. This will pass a `start_time` on
 so that it will limit the time returned in the data to the `start_time`, for example::
 
     cat = intake_erddap.ERDDAPCatalogReader(
@@ -148,7 +148,7 @@ Variables `time`, `latitude`, `longitude`, and `z` are always additionally retur
 Mask due to quality flags
 -------------------------
 
-If `mask_failed_qartod=True`` and `*_qc_agg` columns associated with the data columns are available, data values associated with QARTOD flags other than 1 and 2 will be nan'ed out. Has not been thoroughly tested. 
+If `mask_failed_qartod=True`` and `*_qc_agg` columns associated with the data columns are available, data values associated with QARTOD flags other than 1 and 2 will be nan'ed out. Has not been thoroughly tested.
 
 
 Simple caching

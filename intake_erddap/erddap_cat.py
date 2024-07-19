@@ -20,17 +20,19 @@ import pandas as pd
 import requests
 
 from erddapy import ERDDAP
+
 # from intake.catalog.base import Catalog
 from intake.readers.entry import Catalog, DataDescription
 from intake.readers.readers import BaseReader
-# from intake.catalog.local import LocalCatalogEntry
 
 from intake_erddap.cache import CacheStore
 
 from . import utils
-from .erddap import GridDAPReader, TableDAPReader
 from .utils import match_key_to_category
 from .version import __version__
+
+
+# from intake.catalog.local import LocalCatalogEntry
 
 
 log = getLogger("intake-erddap")
@@ -98,7 +100,7 @@ class ERDDAPCatalogReader(BaseReader):
     chunks : dict, optional
         For griddap protocol, pass a dictionary of chunk sizes for the xarray.
     xarray_kwargs : dict, optional
-        For griddap protocol, pass a dictionary of kwargs to pass to the 
+        For griddap protocol, pass a dictionary of kwargs to pass to the
         xarray.open_dataset method.
     metadata : dict, optional
         Extra metadata for the intake catalog.
@@ -191,7 +193,7 @@ class ERDDAPCatalogReader(BaseReader):
         if variables is not None:
             variables = ["time", "latitude", "longitude", "z"] + variables
         self.variables = variables
-        
+
         chunks = chunks or {}
         xarray_kwargs = xarray_kwargs or {}
 
@@ -444,10 +446,13 @@ class ERDDAPCatalogReader(BaseReader):
         all_metadata = self._load_metadata()
 
         self._entries = {}
-        
+
         # Remove datasets that are redundant
         if len(df) > 0:
-            df = df[(~df["datasetID"].str.startswith("ism-")) * (df["datasetID"] != "allDatasets")]
+            df = df[
+                (~df["datasetID"].str.startswith("ism-"))
+                * (df["datasetID"] != "allDatasets")
+            ]
 
         entries, aliases = {}, {}
         for index, row in df.iterrows():
@@ -485,9 +490,7 @@ class ERDDAPCatalogReader(BaseReader):
             else:
                 raise ValueError(f"Unsupported protocol: {self._protocol}")
 
-            metadata["info_url"] = e.get_info_url(
-                response="csv", dataset_id=dataset_id
-            )
+            metadata["info_url"] = e.get_info_url(response="csv", dataset_id=dataset_id)
             entries[dataset_id] = DataDescription(
                 datatype,
                 kwargs={"dataset_id": dataset_id, **args},
@@ -495,9 +498,12 @@ class ERDDAPCatalogReader(BaseReader):
             )
             aliases[dataset_id] = dataset_id
 
-        cat = Catalog(data=entries, aliases=aliases,)
+        cat = Catalog(
+            data=entries,
+            aliases=aliases,
+        )
         return cat
-            
+
     def _get_tabledap_constraints(self) -> Dict[str, Union[str, int, float]]:
         """Return the constraints dictionary for a tabledap Reader."""
         result = {}

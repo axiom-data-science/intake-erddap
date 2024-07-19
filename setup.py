@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 from pathlib import Path
+
 from setuptools import setup
+
 
 requires = open("requirements.txt").read().strip().split("\n")
 
