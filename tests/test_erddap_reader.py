@@ -1,6 +1,6 @@
 #!/usr/bin/env pytest
 # -*- coding: utf-8 -*-
-"""Unit tests for the ERDDAP Source object."""
+"""Unit tests for the ERDDAP Reader object."""
 import json
 
 from pathlib import Path
@@ -12,13 +12,13 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from intake_erddap.erddap import GridDAPSource, TableDAPSource
+from intake_erddap.erddap import GridDAPReader, TableDAPReader
 
 
 def _grid(grid_data) -> xr.Dataset:
 
     time = xr.DataArray(
-        data=np.array(["2022-01-01T00:00:00"], dtype="<M8[s]"),
+        data=np.array(["2022-01-01T00:00:00"]),
         dims=("time",),
         attrs={"standard_name": "time", "units": "seconds since 1970-01-01"},
     )
@@ -59,32 +59,32 @@ def fake_dask_grid() -> xr.Dataset:
     return _grid(grid_data)
 
 
-@mock.patch("intake_erddap.erddap.TableDAPSource._get_dataset_metadata")
+@mock.patch("intake_erddap.erddap.TableDAPReader._get_dataset_metadata")
 @mock.patch("erddapy.ERDDAP.to_pandas")
-def test_erddap_source_read(mock_to_pandas, mock_get_dataset_metadata):
-    """Tests that the source will read from ERDDAP into a pd.DataFrame."""
+def test_erddap_reader_read(mock_to_pandas, mock_get_dataset_metadata):
+    """Tests that the reader will read from ERDDAP into a pd.DataFrame."""
     df = pd.DataFrame()
     df["time (UTC)"] = ["2022-10-21T00:00:00Z", "2022-10-21T00:00:00Z"]
     df["sea_water_temperature (deg_C)"] = [13.4, 13.4]
     mock_to_pandas.return_value = df
-    mock_get_dataset_metadata.return_value = {}
+    mock_get_dataset_metadata.return_value = {"variables": {}}
 
-    source = TableDAPSource(
+    reader = TableDAPReader(
         server="http://erddap.invalid/erddap", dataset_id="abc123", protocol="tabledap"
     )
-    df = source.read()
+    df = reader.read()
+
     assert df is not None
     assert mock_to_pandas.called
     assert len(df) == 2
 
-    source.close()
-    assert source._dataframe is None
+    reader.close()
 
 
-@mock.patch("intake_erddap.erddap.TableDAPSource._get_dataset_metadata")
+@mock.patch("intake_erddap.erddap.TableDAPReader._get_dataset_metadata")
 @mock.patch("erddapy.ERDDAP.to_pandas")
-def test_erddap_source_read_processing(mock_to_pandas, mock_get_dataset_metadata):
-    """Tests that the source will read from ERDDAP into a pd.DataFrame with processing flag."""
+def test_erddap_reader_read_processing(mock_to_pandas, mock_get_dataset_metadata):
+    """Tests that the reader will read from ERDDAP into a pd.DataFrame with processing flag."""
     df = pd.DataFrame()
     df["time"] = [
         "2022-10-21T01:00:00Z",
@@ -94,16 +94,16 @@ def test_erddap_source_read_processing(mock_to_pandas, mock_get_dataset_metadata
     df["sea_water_temperature"] = [13.4, 13.4, np.nan]
     df["sea_water_temperature_qc_agg"] = [1, 4, 2]
     mock_to_pandas.return_value = df
-    mock_get_dataset_metadata.return_value = {}
+    mock_get_dataset_metadata.return_value = {"variables": {}}
 
-    source = TableDAPSource(
+    reader = TableDAPReader(
         server="http://erddap.invalid/erddap",
         dataset_id="abc123",
         protocol="tabledap",
         mask_failed_qartod=True,
         dropna=True,
     )
-    df = source.read()
+    df = reader.read()
     assert df is not None
     assert mock_to_pandas.called
     # mask_failed_qartod flag removes 2nd data point and dropna removes 3rd data point
@@ -111,7 +111,7 @@ def test_erddap_source_read_processing(mock_to_pandas, mock_get_dataset_metadata
 
 
 @mock.patch("requests.get")
-def test_tabledap_source_get_dataset_metadata(mock_get):
+def test_tabledap_reader_get_dataset_metadata(mock_get):
     test_data = Path(__file__).parent / "test_data/tabledap_metadata.json"
     bad = {
         "table": {
@@ -124,8 +124,10 @@ def test_tabledap_source_get_dataset_metadata(mock_get):
     resp = mock.MagicMock()
     resp.json.side_effect = [json.loads(test_data.read_text()), bad]
     mock_get.return_value = resp
-    source = TableDAPSource(server="http://erddap.invalid", dataset_id="abc123")
-    metadata = source._get_dataset_metadata()
+    server = "http://erddap.invalid"
+    dataset_id = "abc123"
+    reader = TableDAPReader(server, dataset_id)
+    metadata = reader._get_dataset_metadata(server, dataset_id)
     assert metadata["cdm_data_type"] == "TimeSeries"
     assert metadata["variables"]["z"]["actual_range"] == [0.0, 0.0]
     assert metadata["variables"]["depth_to_water_level"]["status_flags"] == [
@@ -136,43 +138,28 @@ def test_tabledap_source_get_dataset_metadata(mock_get):
         9,
     ]
 
-    metadata = source._get_dataset_metadata()
+    metadata = reader._get_dataset_metadata(server, dataset_id)
     assert len(metadata) == 1
     assert len(metadata["variables"]) == 0
 
 
 @mock.patch("xarray.open_dataset")
-def test_griddap_source_no_chunks(mock_open_dataset, fake_grid):
+def test_griddap_reader_no_chunks(mock_open_dataset, fake_grid):
     server = "https://erddap.invalid"
     dataset_id = "abc123"
     mock_open_dataset.return_value = fake_grid
-    source = GridDAPSource(server=server, dataset_id=dataset_id)
-    ds = source.to_dask()
+    reader = GridDAPReader(server=server, dataset_id=dataset_id)
+    ds = reader.read()
     assert ds is fake_grid
     assert "_NCProperties" not in ds.attrs
-
-    with pytest.raises(NotImplementedError):
-        source.read()
-
-    arr = source.read_partition(("temp", None))
-    assert isinstance(arr, np.ndarray)
-
-    arr = source.read_partition(["temp", None])
-    assert isinstance(arr, np.ndarray)
-
-    with pytest.raises(TypeError):
-        source.read_partition("temp")
-
-    source.close()
-    assert source._ds is None
-    assert source._schema is None
+    assert "temp" in ds.variables
 
 
 @mock.patch("xarray.open_dataset")
-def test_griddap_source_with_dask(mock_open_dataset, fake_dask_grid):
+def test_griddap_reader_with_dask(mock_open_dataset, fake_dask_grid):
     server = "https://erddap.invalid"
     dataset_id = "abc123"
     mock_open_dataset.return_value = fake_dask_grid
-    source = GridDAPSource(server=server, dataset_id=dataset_id)
-    arr = source.read_partition(("temp", 0))
-    assert isinstance(arr, np.ndarray)
+    reader = GridDAPReader(server=server, dataset_id=dataset_id)
+    arr = reader.read()
+    assert isinstance(arr, xr.Dataset)

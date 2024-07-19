@@ -3,13 +3,14 @@ channels:
   - conda-forge
 dependencies:
   - python=3.9
+  - appdirs
   - numpy
   - dask
   - pandas
   - erddapy
+  - fsspec
   - panel
-  - intake
-  - intake-xarray>=0.6.1
+  # - intake
   - pytest
   - pytest-cov
   - isort
@@ -19,6 +20,8 @@ dependencies:
   - mypy
   - codecov
   - coverage[toml]
+  - xarray
   - pip
   - pip:
+    - git+https://github.com/intake/intake
     - cf-pandas

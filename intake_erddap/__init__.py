@@ -1,12 +1,12 @@
 """intake-erddap package."""
-from .erddap import GridDAPSource, TableDAPSource
-from .erddap_cat import ERDDAPCatalog
-from .version import __version__
+import intake  # noqa: F401
+
+from .erddap import GridDAPReader, TableDAPReader
+from .erddap_cat import ERDDAPCatalogReader
 
 
 __all__ = [
-    "ERDDAPCatalog",
-    "TableDAPSource",
-    "GridDAPSource",
-    "__version__",
+    "ERDDAPCatalogReader",
+    "TableDAPReader",
+    "GridDAPReader",
 ]

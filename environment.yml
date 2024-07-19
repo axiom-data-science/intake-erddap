@@ -8,10 +8,10 @@ dependencies:
   - dask
   - pandas
   - erddapy
-  - panel
+  # - panel
   - appdirs
-  - intake
-  - intake-xarray>=0.6.1
+  # - intake
   - pip
   - pip:
+    - git+https://github.com/intake/intake
     - cf-pandas

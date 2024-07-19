@@ -26,17 +26,17 @@ import intake_erddap  # isort:skip
 # -- Project information -----------------------------------------------------
 
 project = "intake-erddap"
-copyright = "Copyright 2022 Axiom Data Science, LLC"
+copyright = "Copyright 2022-2024 Axiom Data Science, LLC"
 author = "Axiom Data Science, LLC"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 # see https://pypi.org/project/setuptools-scm/ for details
-from pkg_resources import get_distribution
+from importlib.metadata import version as imversion
 
 
-release = get_distribution("intake_erddap").version
+release = imversion("intake_erddap")
 # for example take major/minor
 version = ".".join(release.split(".")[:2])
 
@@ -71,6 +71,11 @@ nb_custom_formats = {
 
 nb_execution_timeout = 120
 
+
+# https://myst-nb.readthedocs.io/en/v0.9.0/use/execute.html
+# jupyter_execute_notebooks = "off"
+nb_execution_mode = "force"
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
@@ -85,10 +90,10 @@ exclude_patterns = ["_build", "**.ipynb_checkpoints", "Thumbs.db", ".DS_Store"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-#html_theme = "furo"
+html_theme = "furo"
 
 # furo variables
-html_title = "intake-axds documentation"
+html_title = "intake-erddap documentation"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
