@@ -10,6 +10,7 @@ import requests
 import xarray as xr
 
 from erddapy import ERDDAP
+import intake
 from intake.readers.readers import BaseReader
 
 
