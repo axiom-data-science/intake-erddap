@@ -3,10 +3,12 @@ channels:
   - conda-forge
 dependencies:
   - python=3.9
+  - appdirs
   - numpy
   - dask
   - pandas
   - erddapy
+  - fsspec
   - panel
   # - intake
   - pytest
