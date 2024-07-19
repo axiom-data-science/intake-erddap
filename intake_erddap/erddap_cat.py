@@ -28,7 +28,7 @@ from intake.readers.readers import BaseReader
 from intake_erddap.cache import CacheStore
 
 from . import utils
-from .erddap import GridDAPSource, TableDAPSource
+from .erddap import GridDAPReader, TableDAPReader
 from .utils import match_key_to_category
 from .version import __version__
 
@@ -95,8 +95,17 @@ class ERDDAPCatalogReader(BaseReader):
         One of the two supported ERDDAP Data Access Protocols: "griddap", or
         "tabledap". "tabledap" will present tabular datasets using pandas,
         meanwhile "griddap" will use xarray.
+    chunks : dict, optional
+        For griddap protocol, pass a dictionary of chunk sizes for the xarray.
+    xarray_kwargs : dict, optional
+        For griddap protocol, pass a dictionary of kwargs to pass to the 
+        xarray.open_dataset method.
     metadata : dict, optional
         Extra metadata for the intake catalog.
+    variables : list of str, optional
+        List of variables to limit the dataset to, if available. If you're not
+        sure what variables are available, check info_url for the station, or
+        look up the dataset on the ERDDAP server.
     query_type : str, default "union"
         Specifies how the catalog should apply the query parameters. Choices are
         ``"union"`` or ``"intersection"``. If the ``query_type`` is set to
@@ -104,6 +113,11 @@ class ERDDAPCatalogReader(BaseReader):
         each individual query made to ERDDAP. This is equivalent to a logical
         AND of the results. If the value is ``"union"`` then the results will be
         the union of each resulting dataset. This is equivalent to a logical OR.
+    open_kwargs : dict, optional
+        Keyword arguments to pass to the `open` method of the ERDDAP Reader,
+        e.g. pandas read_csv. Response is an optional keyword argument that will
+        be used by ERDDAPY to determine the response format. Default is "csvp" and
+        for TableDAP Readers, "csv" and "csv0" are reasonable choices too.
     mask_failed_qartod : bool, False
         WARNING ALPHA FEATURE. If True and `*_qc_agg` columns associated with
         data columns are available, data values associated with QARTOD flags
@@ -145,7 +159,10 @@ class ERDDAPCatalogReader(BaseReader):
         erddap_client: Optional[Type[ERDDAP]] = None,
         use_source_constraints: bool = True,
         protocol: str = "tabledap",
+        chunks: Optional[dict] = None,
+        xarray_kwargs: Optional[dict] = None,
         metadata: dict = None,
+        variables: list = None,
         query_type: str = "union",
         cache_period: Optional[Union[int, float]] = 500,
         open_kwargs: dict = None,
@@ -160,6 +177,8 @@ class ERDDAPCatalogReader(BaseReader):
         self._entries: Dict[str, Catalog] = {}
         self._use_source_constraints = use_source_constraints
         self._protocol = protocol
+        self._chunks = chunks
+        self._xarray_kwargs = xarray_kwargs
         self._dataset_metadata: Optional[Mapping[str, dict]] = None
         self._query_type = query_type
         self.server = server
@@ -169,6 +188,12 @@ class ERDDAPCatalogReader(BaseReader):
         self._mask_failed_qartod = mask_failed_qartod
         self._dropna = dropna
         self._cache_kwargs = cache_kwargs
+        if variables is not None:
+            variables = ["time", "latitude", "longitude", "z"] + variables
+        self.variables = variables
+        
+        chunks = chunks or {}
+        xarray_kwargs = xarray_kwargs or {}
 
         if kwargs_search is not None:
             checks = [
@@ -272,7 +297,6 @@ class ERDDAPCatalogReader(BaseReader):
                     raise
             df.rename(columns={"Dataset ID": "datasetID"}, inplace=True)
             frames.append(df)
-
         if self._query_type == "union":
             result = pd.concat(frames)
             result = result.drop_duplicates("datasetID")
@@ -422,7 +446,8 @@ class ERDDAPCatalogReader(BaseReader):
         self._entries = {}
         
         # Remove datasets that are redundant
-        df = df[(~df["datasetID"].str.startswith("ism-")) * (df["datasetID"] != "allDatasets")]
+        if len(df) > 0:
+            df = df[(~df["datasetID"].str.startswith("ism-")) * (df["datasetID"] != "allDatasets")]
 
         entries, aliases = {}, {}
         for index, row in df.iterrows():
@@ -432,6 +457,7 @@ class ERDDAPCatalogReader(BaseReader):
             args = {
                 "server": self.server,
                 "dataset_id": dataset_id,
+                "variables": self.variables,
                 "protocol": self._protocol,
                 "constraints": {},
                 "open_kwargs": self.open_kwargs,
@@ -445,7 +471,7 @@ class ERDDAPCatalogReader(BaseReader):
                     }
                 )
                 args["constraints"].update(self._get_tabledap_constraints())
-                datatype = "intake_erddap.erddap:TableDAPSource"
+                datatype = "intake_erddap.erddap:TableDAPReader"
             elif self._protocol == "griddap":
                 args.update(
                     {
@@ -455,7 +481,7 @@ class ERDDAPCatalogReader(BaseReader):
                 )
                 # no equivalent for griddap, though maybe it works the same?
                 args["constraints"].update(self._get_tabledap_constraints())
-                datatype = "intake_erddap.erddap:GridDAPSource"
+                datatype = "intake_erddap.erddap:GridDAPReader"
             else:
                 raise ValueError(f"Unsupported protocol: {self._protocol}")
 
@@ -470,10 +496,10 @@ class ERDDAPCatalogReader(BaseReader):
             aliases[dataset_id] = dataset_id
 
         cat = Catalog(data=entries, aliases=aliases,)
-        return cat        
+        return cat
             
     def _get_tabledap_constraints(self) -> Dict[str, Union[str, int, float]]:
-        """Return the constraints dictionary for a tabledap source."""
+        """Return the constraints dictionary for a tabledap Reader."""
         result = {}
         if self._use_source_constraints and "min_time" in self.kwargs_search:
             min_time = self.kwargs_search["min_time"]

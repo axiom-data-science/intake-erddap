@@ -1,9 +1,8 @@
 """Project version module."""
-from pkg_resources import DistributionNotFound, get_distribution
-
+from importlib.metadata import version, PackageNotFoundError
 
 try:
-    __version__ = get_distribution("intake-erddap").version
-except DistributionNotFound:
+    __version__ = version("intake-erddap")
+except PackageNotFoundError:
     # package is not installed
     __version__ = "unknown"

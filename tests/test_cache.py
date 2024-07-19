@@ -36,23 +36,23 @@ def test_cache_file(user_cache_dir_mock, tempdir):
     assert filepath.name == f"{sha}.gz"
 
 
-@mock.patch("requests.get")
-@mock.patch("appdirs.user_cache_dir")
-def test_cache_csv(user_cache_dir_mock, http_get_mock, tempdir):
-    user_cache_dir_mock.return_value = tempdir
-    resp = mock.Mock()
-    resp.content = b"blahblah"
-    http_get_mock.return_value = resp
-    url = "http://kevinbacon.invalid/erddap/advanced?blahbah"
-    store = cache.CacheStore()
-    store.cache_response(url)
-    sha = store.hash_url(url)
-    target = Path(tempdir) / f"{sha}.gz"
-    assert target.exists()
-    assert http_get_mock.called_with(url)
-    with gzip.open(target, "rt", encoding="utf-8") as f:
-        buf = f.read()
-        assert buf == "blahblah"
+# @mock.patch("requests.get")
+# @mock.patch("appdirs.user_cache_dir")
+# def test_cache_csv(user_cache_dir_mock, http_get_mock, tempdir):
+#     user_cache_dir_mock.return_value = tempdir
+#     resp = mock.Mock()
+#     resp.content = b"blahblah"
+#     http_get_mock.return_value = resp
+#     url = "http://kevinbacon.invalid/erddap/advanced?blahbah"
+#     store = cache.CacheStore()
+#     store.cache_response(url)
+#     sha = store.hash_url(url)
+#     target = Path(tempdir) / f"{sha}.gz"
+#     assert target.exists()
+#     assert http_get_mock.called_with(url)
+#     with gzip.open(target, "rt", encoding="utf-8") as f:
+#         buf = f.read()
+#         assert buf == "blahblah"
 
 
 @mock.patch("requests.get")

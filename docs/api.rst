@@ -18,11 +18,11 @@
 ------------------------
 
 
-.. autoclass:: intake_erddap.erddap.ERDDAPSource
+.. autoclass:: intake_erddap.erddap.ERDDAPReader
    :members: get_client
 
-.. autoclass:: intake_erddap.erddap.TableDAPSource
+.. autoclass:: intake_erddap.erddap.TableDAPReader
    :members: read, read_partition, read_chunked
 
-.. autoclass:: intake_erddap.erddap.GridDAPSource
+.. autoclass:: intake_erddap.erddap.GridDAPReader
    :members: read_partition, read_chunked, to_dask, close

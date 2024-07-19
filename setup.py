@@ -22,8 +22,8 @@ setup(
     package_data={"": ["*.csv", "*.yml", "*.html"]},
     entry_points={
         "intake.imports": [
-            "tabledap = intake_erddap.erddap:TableDAPSource",
-            "griddap = intake_erddap.erddap:GridDAPSource",
+            "tabledap = intake_erddap.erddap:TableDAPReader",
+            "griddap = intake_erddap.erddap:GridDAPReader",
             "erddap_cat = intake_erddap.erddap_cat:ERDDAPCatalogReader",
         ],
     },

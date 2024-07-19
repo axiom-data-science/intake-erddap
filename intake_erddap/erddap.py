@@ -1,4 +1,4 @@
-"""Source implementations for intake-erddap."""
+"""Reader implementations for intake-erddap."""
 import typing
 
 from logging import getLogger
@@ -20,11 +20,11 @@ from intake.readers.datatypes import BaseData
 log = getLogger("intake-erddap")
 
 
-class ERDDAPSource(BaseReader):
+class ERDDAPReader(BaseReader):
     """
-    ERDDAP Source (Base Class). This class represents the abstract base class
-    for an intake data source object for ERDDAP. Clients should use either
-    ``TableDAPSource`` or ``GridDAPSource``.
+    ERDDAP Reader (Base Class). This class represents the abstract base class
+    for an intake data reader object for ERDDAP. Clients should use either
+    ``TableDAPReader`` or ``GridDAPReader``.
 
     Parameters
     ----------
@@ -64,8 +64,8 @@ class ERDDAPSource(BaseReader):
         return e
 
 
-class TableDAPSource(ERDDAPSource):
-    """Creates a Data Source for an ERDDAP TableDAP Dataset.
+class TableDAPReader(ERDDAPReader):
+    """Creates a Data Reader for an ERDDAP TableDAP Dataset.
 
     Parameters
     ----------
@@ -83,14 +83,14 @@ class TableDAPSource(ERDDAPSource):
         A mapping of conditions and constraints. Example:
         ``{"time>=": "2022-01-02T12:00:00Z", "lon>": -140, "lon<": 0}``
     metadata : dict, optional
-        Additional metadata to include with the source passed from the catalog.
+        Additional metadata to include with the reader passed from the catalog.
     erddap_client : type, optional
         A class that implements an interface like erdappy's ERDDAP class. The
-        source will rely on this client to interface with ERDDAP for most
+        reader will rely on this client to interface with ERDDAP for most
         requests.
     http_client : module or object, optional
         An object or module that implements an HTTP Client similar to request's
-        interface. The source will use this object to make HTTP requests to
+        interface. The reader will use this object to make HTTP requests to
         ERDDAP in some cases.
     mask_failed_qartod : bool, False
         WARNING ALPHA FEATURE. If True and `*_qc_agg` columns associated with
@@ -107,19 +107,19 @@ class TableDAPSource(ERDDAPSource):
 
     Examples
     --------
-    Sources are normally returned from a catalog object, but a source can be instantiated directly:
+    Readers are normally returned from a catalog object, but a Reader can be instantiated directly:
 
-    >>> source = TableDAPSource("https://erddap.senors.axds.co/erddap",
+    >>> reader = TableDAPReader("https://erddap.senors.axds.co/erddap",
     ... "gov_usgs_waterdata_441759103261203")
 
-    Getting a pandas DataFrame from the source:
+    Getting a pandas DataFrame from the reader:
 
-    >>> ds = source.read()
+    >>> ds = reader.read()
 
     Once the dataset object has been instantiated, the dataset's full metadata
-    is available in the source.
+    is available in the reader.
 
-    >>> source.metadata
+    >>> reader.metadata
     {'info_url': 'https://erddap.sensors.axds.co/erddap/info/gov_usgs_waterdata_404513098181201...',
     'catalog_dir': '',
     'variables': {'time': {'_CoordinateAxisType': 'Time',
@@ -134,26 +134,39 @@ class TableDAPSource(ERDDAPSource):
     """
     output_instance = "pandas:DataFrame"
 
-    def _read(self, server, dataset_id, mask_failed_qartod=False, dropna=False, cache_kwargs=None,
-              constraints=None, **kw):
+    def _read(self, server, dataset_id, variables=None, mask_failed_qartod=False, dropna=False, cache_kwargs=None,
+              open_kwargs=None, constraints=None, **kw):
+        open_kwargs = open_kwargs or {}
+        variables = variables or []
         kw.pop("protocol", None)
         protocol = kw.pop("protocol", "tabledap")
+        
+        # check for variables in user-input list that are not available for the dataset
         meta2 = self._get_dataset_metadata(server, dataset_id)
-        e = self.get_client(server, protocol, dataset_id, variables=meta2["variables"],
+        variables_diff = set(variables) - set(meta2["variables"].keys())
+        if len(variables_diff) > 0:
+            variables = [var for var in variables if var not in variables_diff]
+
+        e = self.get_client(server, protocol, dataset_id, variables=variables,
                             constraints=constraints or {}, **kw)
         if cache_kwargs is not None:
-            if "response" in self.open_kwargs:
-                response = self.open_kwargs["response"]
-                self.open_kwargs.pop("response")
+            if "response" in open_kwargs:
+                response = open_kwargs["response"]
+                open_kwargs.pop("response")
                 url = e.get_download_url(response=response)
             else:
-                url = e.get_download_url(response=response)
+                url = e.get_download_url(response="csvp")  # should this be the default or csv?
 
-            with fsspec.open(f"simplecache://::{url}", **(cache_kwargs or {})) as f:
-                dataframe: pd.DataFrame = pd.read_csv(f)
+            try:
+                with fsspec.open(f"simplecache://::{url}", **(cache_kwargs or {})) as f:
+                    dataframe: pd.DataFrame = pd.read_csv(f, **open_kwargs)
+            except OSError as e:  # might get file name too long
+                print(e)
+                print("If your filenames are too long, input only a few variables"
+                      "to return or input into cache kwargs `same_names=False`")
         else:
             dataframe: pd.DataFrame = e.to_pandas(
-                requests_kwargs={"timeout": 60}
+                requests_kwargs={"timeout": 60}, **open_kwargs
             )
         if mask_failed_qartod:
             dataframe = self.run_mask_failed_qartod(dataframe)
@@ -188,15 +201,13 @@ class TableDAPSource(ERDDAPSource):
         for datacol in self.data_cols(df):
             qccol = f"{datacol}_qc_agg"
             if qccol in df.columns:
-                df.loc[
-                    ~self._dataframe[qccol].isin([1, 2]), datacol
-                ] = pd.NA
+                df.loc[~df[qccol].isin([1, 2]), datacol] = pd.NA
                 df.drop(columns=[qccol], inplace=True)
         return df
 
     def run_dropna(self, df):
         """Drop nan rows based on the data columns."""
-        return df.dropna(subset=self.data_cols)
+        return df.dropna(subset=self.data_cols(df))
 
     def _get_dataset_metadata(self, server, dataset_id) -> dict:
         """Fetch and return the metadata document for the dataset."""
@@ -239,8 +250,8 @@ class TableDAPSource(ERDDAPSource):
         return newvalue
 
 
-class GridDAPSource(ERDDAPSource):
-    """Creates a Data Source for an ERDDAP GridDAP Dataset.
+class GridDAPReader(ERDDAPReader):
+    """Creates a Data Reader for an ERDDAP GridDAP Dataset.
 
     Parameters
     ----------
@@ -267,19 +278,19 @@ class GridDAPSource(ERDDAPSource):
 
     Examples
     --------
-    Sources are normally returned from a catalog object, but a source can be instantiated directly:
+    Readers are normally returned from a catalog object, but a reader can be instantiated directly:
 
-    >>> source = GridDAPSource("https://coastwatch.pfeg.noaa.gov/erddap", "charmForecast1day",
+    >>> reader = GridDAPReader("https://coastwatch.pfeg.noaa.gov/erddap", "charmForecast1day",
     ... chunks={"time": 1})
 
-    Getting an xarray dataset from the source object:
+    Getting an xarray dataset from the reader object:
 
-    >>> ds = source.to_dask()
+    >>> ds = reader.read()
 
     Once the dataset object has been instantiated, the dataset's full metadata
-    is available in the source.
+    is available in the reader.
 
-    >>> source.metadata
+    >>> reader.metadata
     {'catalog_dir': '',
     'dims': {'time': 1182, 'latitude': 391, 'longitude': 351},
     'data_vars': {'pseudo_nitzschia': ['time', 'latitude', 'longitude'],
@@ -292,39 +303,42 @@ class GridDAPSource(ERDDAPSource):
     'acknowledgement':
         ...
 
-    Warning
-    -------
-    The ``read()`` method will raise a ``NotImplemented`` exception because the
-    standard intake interface has the result read entirely into memory. For
-    gridded datasets this should not be allowed, reading the entire dataset into
-    memory can overwhelm the server, get the client blacklisted, and potentially
-    crash the client by exhausting available system memory. If a client truly
-    wants to load the entire dataset into memory, the client can invoke the
-    method ``ds.load()`` on the Dataset object.
     """
 
-    def __init__(
-        self,
+    # def __init__(
+    #     self,
+    #     server: str,
+    #     dataset_id: str,
+    #     constraints: dict = None,
+    #     chunks: Union[None, int, dict, str] = None,
+    #     xarray_kwargs: dict = None,
+    #     **kwargs,
+    # ):
+    #     self._server = server
+    #     self._chunks = chunks
+    #     self._constraints = constraints or {}
+    #     self._xarray_kwargs = xarray_kwargs or {}
+    #     # Initialized by the private getter _get_schema
+    #     self.urlpath = f"{server}/griddap/{dataset_id}"
+    #     # https://github.com/python/mypy/issues/6799
+    #     kwargs.pop("protocol", None)
+    #     super().__init__(dataset_id=dataset_id, protocol="griddap", **kwargs)  # type: ignore
+
+    def _read(self, 
         server: str,
         dataset_id: str,
         constraints: dict = None,
         chunks: Union[None, int, dict, str] = None,
         xarray_kwargs: dict = None,
-        **kwargs,
-    ):
-        self._server = server
-        self._chunks = chunks
-        self._constraints = constraints or {}
-        self._xarray_kwargs = xarray_kwargs or {}
-        # Initialized by the private getter _get_schema
-        self.urlpath = f"{server}/griddap/{dataset_id}"
-        # https://github.com/python/mypy/issues/6799
-        kwargs.pop("protocol", None)
-        super().__init__(dataset_id=dataset_id, protocol="griddap", **kwargs)  # type: ignore
-
-    def _read(self):
+        **kw
+):
+        constraints = constraints or {}
+        chunks = chunks or {}
+        xarray_kwargs = xarray_kwargs or {}
+        urlpath = f"{server}/griddap/{dataset_id}"
+        
         ds = xr.open_dataset(
-            self.urlpath, chunks=self._chunks, **self._xarray_kwargs
+            urlpath, chunks=chunks, **xarray_kwargs
         )
         # _NCProperties is an internal property which xarray does not yet deal
         # with specially, so we remove it here to prevent it from causing

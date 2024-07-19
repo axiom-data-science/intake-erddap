@@ -24,15 +24,13 @@ For changes prior to 2022-10-19, all contributions are Copyright James Munroe, s
 
 
 
-Intake is a lightweight set of tools for loading and sharing data in data
-science projects. Intake ERDDAP provides a set of integrations for ERDDAP.
+Intake is a lightweight set of tools for loading and sharing data in data science projects. Intake ERDDAP provides a set of integrations for ERDDAP.
 
-- Quickly identify all datasets from an ERDDAP service in a geographic region,
-  or containing certain variables.
+- Quickly identify all datasets from an ERDDAP service in a geographic region, or containing certain variables.
 - Produce a pandas DataFrame for a given dataset or query.
 - Get an xarray Dataset for the Gridded datasets.
 
-The Key features are:
+The key features are:
 
  - Pandas DataFrames for any TableDAP dataset.
  - xarray Datasets for any GridDAP datasets.
@@ -59,7 +57,7 @@ project is available on PyPI, so it can be installed using `pip`
 The following are prerequisites for a developer environment for this project:
 
 - [conda](https://docs.conda.io/en/latest/miniconda.html)
-- (optional but highly recommended) [mamba](https://mamba.readthedocs.io/en/latest/) Hint: `conda install -c conda-forge mamba`
+- (optional but highly recommended) [mamba](https://mamba.readthedocs.io/en/latest/). Hint: `conda install -c conda-forge mamba`
 
 Note: if `mamba` isn't installed, replace all instances of `mamba` in the following instructions with `conda`.
 
@@ -83,126 +81,74 @@ Note: if `mamba` isn't installed, replace all instances of `mamba` in the follow
    pip install -e .
    ```
 
+Note that you need to install with `pip install .` once to get the `entry_points` correct too.
 
 ## Examples
 
-To create an intake catalog for all of the ERDDAP's TableDAP offerings use:
+To create an `intake` catalog for all of the ERDDAP's TableDAP offerings use:
 
 ```python
-import intake
-catalog = intake.open_erddap_cat(
+import intake_erddap
+catalog = intake_erddap.ERDDAPCatalogReader(
     server="https://erddap.sensors.ioos.us/erddap"
-)
+).read()
 ```
 
 
-The catalog objects behave like a dictionary with the keys representing the
-dataset's unique identifier within ERDDAP, and the values being the
-`TableDAPSource` objects. To access a source object:
+The catalog objects behave like a dictionary with the keys representing the dataset's unique identifier within ERDDAP, and the values being the `TableDAPReader` objects. To access a Reader object (for a single dataset, in this case for dataset_id "aoos_204"):
 
 ```python
-source = catalog["datasetid"]
+dataset = catalog["aoos_204"]
 ```
 
-From the source object, a pandas DataFrame can be retrieved:
+From the reader object, a pandas DataFrame can be retrieved:
 
 ```python
-df = source.read()
+df = dataset.read()
+```
+
+Find other dataset_ids available with
+
+```python
+list(catalog)
 ```
 
 Consider a case where you need to find all wind data near Florida:
 
 ```python
-import intake
+import intake_erddap
 from datetime import datetime
 bbox = (-87.84, 24.05, -77.11, 31.27)
-catalog = intake.open_erddap_cat(
+catalog = intake_erddap.ERDDAPCatalogReader(
    server="https://erddap.sensors.ioos.us/erddap",
    bbox=bbox,
+   intersection="union",
    start_time=datetime(2022, 1, 1),
    end_time=datetime(2023, 1, 1),
    standard_names=["wind_speed", "wind_from_direction"],
-)
+   variables=["wind_speed", "wind_from_direction"],
+).read()
 
-df = next(catalog.values()).read()
+dataset_id = list(catalog)[0]
+print(dataset_id)
+df = catalog[dataset_id].read()
 ```
 
+Using the `standard_names` input with `intersection="union"` searches for datasets that have both "wind_speed" and "wind_from_direction". Using the `variables` input subsequently narrows the dataset to only those columns, plus "time", "latitude", "longitude", and "z".
 
-<table class="align-default">
-<thead>
-   <tr style="text-align: right;">
-   <th></th>
-   <th>time (UTC)</th>
-   <th>wind_speed (m.s-1)</th>
-   <th>wind_from_direction (degrees)</th>
-   </tr>
-</thead>
-<tbody>
-   <tr>
-   <th>0</th>
-   <td>2022-12-14T19:40:00Z</td>
-   <td>7.0</td>
-   <td>140.0</td>
-   </tr>
-   <tr>
-   <th>1</th>
-   <td>2022-12-14T19:20:00Z</td>
-   <td>7.0</td>
-   <td>120.0</td>
-   </tr>
-   <tr>
-   <th>2</th>
-   <td>2022-12-14T19:10:00Z</td>
-   <td>NaN</td>
-   <td>NaN</td>
-   </tr>
-   <tr>
-   <th>3</th>
-   <td>2022-12-14T19:00:00Z</td>
-   <td>9.0</td>
-   <td>130.0</td>
-   </tr>
-   <tr>
-   <th>4</th>
-   <td>2022-12-14T18:50:00Z</td>
-   <td>9.0</td>
-   <td>130.0</td>
-   </tr>
-   <tr>
-   <th>...</th>
-   <td>...</td>
-   <td>...</td>
-   <td>...</td>
-   </tr>
-   <tr>
-   <th>48296</th>
-   <td>2022-01-01T00:40:00Z</td>
-   <td>4.0</td>
-   <td>120.0</td>
-   </tr>
-   <tr>
-   <th>48297</th>
-   <td>2022-01-01T00:30:00Z</td>
-   <td>3.0</td>
-   <td>130.0</td>
-   </tr>
-   <tr>
-   <th>48298</th>
-   <td>2022-01-01T00:20:00Z</td>
-   <td>4.0</td>
-   <td>120.0</td>
-   </tr>
-   <tr>
-   <th>48299</th>
-   <td>2022-01-01T00:10:00Z</td>
-   <td>4.0</td>
-   <td>130.0</td>
-   </tr>
-   <tr>
-   <th>48300</th>
-   <td>2022-01-01T00:00:00Z</td>
-   <td>4.0</td>
-   <td>130.0</td>
-   </tr>
-</tbody>
-</table>
+```python
+                 time (UTC)  latitude (degrees_north)  ...  wind_speed (m.s-1)  wind_from_direction (degrees)
+0      2022-01-01T00:00:00Z                    28.508  ...                 3.6                          126.0
+1      2022-01-01T00:10:00Z                    28.508  ...                 3.8                          126.0
+2      2022-01-01T00:20:00Z                    28.508  ...                 3.6                          124.0
+3      2022-01-01T00:30:00Z                    28.508  ...                 3.4                          125.0
+4      2022-01-01T00:40:00Z                    28.508  ...                 3.5                          124.0
+...                     ...                       ...  ...                 ...                            ...
+52524  2022-12-31T23:20:00Z                    28.508  ...                 5.9                          176.0
+52525  2022-12-31T23:30:00Z                    28.508  ...                 6.8                          177.0
+52526  2022-12-31T23:40:00Z                    28.508  ...                 7.2                          175.0
+52527  2022-12-31T23:50:00Z                    28.508  ...                 7.4                          169.0
+52528  2023-01-01T00:00:00Z                    28.508  ...                 8.1                          171.0
+
+[52529 rows x 6 columns]
+```

@@ -1,16 +1,16 @@
-name: docs
+name: intake-erddap-docs
 channels:
   - conda-forge
   - nodefaults
 dependencies:
-   - python=3.9
+   - python=3.11
    # If your docs code examples depend on other packages add them here
    - numpy
    - dask
    - pandas
    - erddapy
    - panel
-   - intake
+  #  - intake
    - intake-xarray>=0.6.1
    - cf_pandas
    # These are needed for the docs themselves
@@ -29,10 +29,11 @@ dependencies:
    - pip
    - recommonmark
    - pip:
+     - furo
      - git+https://github.com/intake/intake
-     - intake-parquet
-     - intake-xarray
-     - intake-erddap
+    #  - intake-parquet
+    #  - intake-xarray
+    #  - intake-erddap
     #  - "dask[complete]"
      - docrep<=0.2.7
      - furo
