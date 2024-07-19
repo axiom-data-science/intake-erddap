@@ -9,7 +9,6 @@ dependencies:
   - erddapy
   - panel
   - intake
-  - intake-xarray>=0.6.1
   - pytest
   - pytest-cov
   - isort
@@ -21,4 +20,5 @@ dependencies:
   - coverage[toml]
   - pip
   - pip:
+    - git+https://github.com/intake/intake
     - cf-pandas
