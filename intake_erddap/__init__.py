@@ -1,5 +1,5 @@
 """intake-erddap package."""
-import intake
+import intake  # noqa: F401
 
 from .erddap import GridDAPReader, TableDAPReader
 from .erddap_cat import ERDDAPCatalogReader
