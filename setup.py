@@ -21,7 +21,7 @@ setup(
     maintainer_email="dev@axds.co",
     license="BSD",
     packages=["intake_erddap"],
-    package_data={"": ["*.csv", "*.yml", "*.html"]},
+    # package_data={"": ["*.csv", "*.yml", "*.html"]},
     entry_points={
         "intake.imports": [
             "tabledap = intake_erddap.erddap:TableDAPReader",
@@ -29,7 +29,7 @@ setup(
             "erddap_cat = intake_erddap.erddap_cat:ERDDAPCatalogReader",
         ],
     },
-    include_package_data=True,
+    # include_package_data=True,
     install_requires=requires,
     long_description=Path("README.md").read_text(),
     long_description_content_type='text/markdown',

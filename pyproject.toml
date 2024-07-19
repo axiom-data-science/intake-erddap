@@ -33,7 +33,5 @@ testpaths = [
 [tool.coverage.run]
 omit = [
     "setup.py",
-    "intake_erddap/_version.py",
-    "intake_erddap/version.py",
     "tests/*",
 ]
