@@ -18,16 +18,6 @@ from intake_erddap.cache import CacheStore
 log = getLogger("intake-erddap")
 
 
-def get_project_version() -> str:
-    """Return the project version.
-
-    This function resolves circular import problems with version.
-    """
-    from intake_erddap import __version__
-
-    return __version__
-
-
 def return_category_options(
     server: str,
     category: str = "standard_name",

@@ -20,8 +20,6 @@ import pandas as pd
 import requests
 
 from erddapy import ERDDAP
-
-# from intake.catalog.base import Catalog
 from intake.readers.entry import Catalog, DataDescription
 from intake.readers.readers import BaseReader
 
@@ -29,10 +27,6 @@ from intake_erddap.cache import CacheStore
 
 from . import utils
 from .utils import match_key_to_category
-from .version import __version__
-
-
-# from intake.catalog.local import LocalCatalogEntry
 
 
 log = getLogger("intake-erddap")
@@ -142,7 +136,6 @@ class ERDDAPCatalogReader(BaseReader):
     """
 
     name = "erddap_cat"
-    version = __version__
     output_instance = "intake.readers.entry:Catalog"
 
     def __init__(

@@ -17,11 +17,6 @@ class Something:
     pass
 
 
-def test_get_project_version():
-    version = utils.get_project_version()
-    assert version is not None
-
-
 @mock.patch("pandas.read_csv")
 def test_category_and_key(mock_read_csv):
     df_mock = pd.DataFrame()
