@@ -18,6 +18,7 @@ dependencies:
   - mypy
   - codecov
   - coverage[toml]
+  - xarray
   - pip
   - pip:
     - git+https://github.com/intake/intake
